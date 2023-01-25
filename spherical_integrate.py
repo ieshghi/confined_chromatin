@@ -42,16 +42,15 @@ def main(simpars,physpars,initarrs,sh):
     wth = initarrs[1]
     wphi = initarrs[2]
     mr = initarrs[3]
-    mth = initarrs.mth[4]
-    mphi = initarrs.mphi[5]
+    mth = initarrs[4]
+    mphi = initarrs[5]
     
-    zers = np.loadtxt('zerovals.txt') #load zeros of the spherical bessel functions
+    zers = np.loadtxt('../zerovals.txt') #load zeros of the spherical bessel functions
     
     #### convert w init conds to harmonics
     
     wanlm,wbnlm = utils.my_spat_to_sh(wth,wphi,sh,zers) 
     manlm,mbnlm = utils.my_spat_to_sh(mth,mphi,sh,zers) 
-    panlm,pbnlm = utils.my_spat_to_sh(pth,pphi,sh,zers)
     
     #### Physics parameters
 
@@ -90,7 +89,7 @@ def main(simpars,physpars,initarrs,sh):
     
         pth = 2*(mth_eq -mth).copy()
         pphi = 2*(mphi_eq -mphi).copy()
-        panlm,bpnlm = utils.my_spat_to_sh(pth,pphi,sh,zers)
+        panlm,pbnlm = utils.my_spat_to_sh(pth,pphi,sh,zers)
     
         if i == 0: #for the first time step we use explicit Euler
             mth += dt*pth

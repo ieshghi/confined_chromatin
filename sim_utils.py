@@ -9,16 +9,16 @@ from matplotlib.animation import FuncAnimation
 def make_coords(simpars): #put initial conditions here
 
     sh = picklable_sht(simpars.lmax,simpars.mmax)  # create sht object with given lmax and mmax (orthonormalized)
+    [nlat,nphi] = sh.set_grid()
+    phi = np.linspace(0,2*np.pi,sh.nphi)
     cost = sh.cos_theta
-    phi = sh.phi
     r = np.linspace(0,1,simpars.nr)*simpars.rmax
     PH,CO,AR = np.meshgrid(phi,cost,r)
 
     return PH,CO,AR,sh
 
 def initialize_arrays(simpars,sh):
-    nlat = simpars.nlat
-    nphi = simpars.nphi
+    [nlat,nphi] = sh.set_grid()
     nr = simpars.nr
     wr = np.zeros((nlat,nphi,nr))
     wth = np.zeros((nlat,nphi,nr))
@@ -108,8 +108,6 @@ def my_grad(rho,sh,besselzer=None):
         oynlm[:,i] = func2bessel(r,olm_r[:,i],nmax,el[i],besselzer)
         opsinlm[:,i] = func2bessel(r,olm_r[:,i],nmax,el[i],besselzer)
 
-    for i in range(nr):
-        olm_r[i,:] = sh.synth(
 
     return oynlm,opsinlm
 
