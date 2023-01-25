@@ -6,6 +6,47 @@ from scipy.optimize import root
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 
+def make_coords(simpars): #put initial conditions here
+
+    sh = picklable_sht(simpars.lmax,simpars.mmax)  # create sht object with given lmax and mmax (orthonormalized)
+    cost = sh.cos_theta
+    phi = sh.phi
+    r = np.linspace(0,1,simpars.nr)*simpars.rmax
+    PH,CO,AR = np.meshgrid(phi,cost,r)
+
+    return PH,CO,AR,sh
+
+def initialize_arrays(simpars,sh):
+    nlat = simpars.nlat
+    nphi = simpars.nphi
+    nr = simpars.nr
+    wr = np.zeros((nlat,nphi,nr))
+    wth = np.zeros((nlat,nphi,nr))
+    wphi = np.zeros((nlat,nphi,nr))
+    mr = np.zeros((nlat,nphi,nr))
+    mth = np.zeros((nlat,nphi,nr))
+    mphi = np.zeros((nlat,nphi,nr))
+    
+    return wr,wth,wphi,mr,mth,mphi
+
+class SimPars():
+    def __init__(self,lmax,mmax,nmax,nr,rmax,dt,nt):
+        self.lmax = lmax
+        self.mmax = mmax
+        self.nmax = nmax
+        self.nr = nr
+        self.rmax = rmax
+        self.dt = dt
+        self.nt = nt
+
+class PhysPars():
+    def __init__(self,eps,lam,ls,ld):
+        self.eps = eps
+        self.lam = lam
+        self.ls = ls
+        self.ld = ld
+        
+
 def meq(wr,wth,wph):
     wsq = (wr**2 + wth**2 + wph**2)
     mr_eq = wr*(1-3*wsq/5)
@@ -44,6 +85,53 @@ def shaperight(zers,sh): #converts the array of zeros to the correct shape, so i
 
     return zers_out
 
+def my_grad(rho,sh,besselzer=None):
+    r = sh.r
+    nmax = sh.nvals[-1]
+    nr = len(r)
+    el = sh.l
+
+    oynlm = np.tile(sh.spec_array(),[nmax,1])
+    opsinlm = np.tile(sh.spec_array(),[nmax,1])
+    olm_r = np.tile(sh.spec_array(),[nr,1])
+    olm_r_grad = np.tile(sh.spec_array(),[nr,1])
+
+    o_grad = np.zeros(rho.shape)
+    lm_num = olm_r.shape[1]
+    
+    for i in range(nr): #transform from spatial to spherical coords
+        olm_r[i,:] = sh.analys(rho[:,:,i])
+
+    for i in range(lm_num):
+        olm_r_grad[:,i] = np.gradient(olm_r[:,i],r,edge_order = 2)
+
+        oynlm[:,i] = func2bessel(r,olm_r[:,i],nmax,el[i],besselzer)
+        opsinlm[:,i] = func2bessel(r,olm_r[:,i],nmax,el[i],besselzer)
+
+    for i in range(nr):
+        olm_r[i,:] = sh.synth(
+
+    return oynlm,opsinlm
+
+def my_analys(rho,sh,besselzer=None):
+    r = sh.r
+    nmax = sh.nvals[-1]
+    nr = len(r)
+    el = sh.l
+
+    onlm = np.tile(sh.spec_array(),[nmax,1])
+    olm_r = np.tile(sh.spec_array(),[nr,1])
+
+    lm_num = olm_r.shape[1]
+    
+    for i in range(nr): #transform from spatial to spherical coords
+        olm_r[i,:] = sh.analys(rho[:,:,i])
+
+    for i in range(lm_num):
+        onlm[:,i] = func2bessel(r,olm_r[:,i],nmax,el[i],besselzer)
+
+    return onlm
+    
 def my_spat_to_sh(v_th,v_ph,sh,besselzer = None): #this routine converts from spatial to harmonic representation, including the radial decomposition into bessel functions. Only keeps the curly part.
 
     #shape of v is (nr,nlat,nphi)
