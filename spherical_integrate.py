@@ -16,7 +16,7 @@ import shtns
 import sim_utils as utils
 import pickle
 
-def main(simpars,physpars,initarrs,sh): 
+def main(simpars,physpars,initarrs,sh,zers = None): 
     lmax = simpars.lmax  # maximum degree of spherical harmonic representation.
     mmax = simpars.mmax  # maximum order of spherical harmonic representation.  
     nmax = simpars.nmax  # maximum order of radial Bessel function representation
@@ -45,7 +45,8 @@ def main(simpars,physpars,initarrs,sh):
     mth = initarrs[4]
     mphi = initarrs[5]
     
-    zers = np.loadtxt('../zerovals.txt') #load zeros of the spherical bessel functions
+    if zers is None:
+        zers = np.loadtxt('../zerovals.txt') #load zeros of the spherical bessel functions
     
     #### convert w init conds to harmonics
     

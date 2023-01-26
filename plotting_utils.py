@@ -16,28 +16,62 @@ def load_w_hist(name):
         simpars = pickle.load(f)
     return wahistdat,wbhistdat,mahistdat,mbhistdat,sh,r,simpars
 
-def density_movie(bhistdat,sh,r,simpars,phi_init,phi0,besselzers = None,name = 'density_mov'):
+def density_movie(bhistdat,sh,r,simpars,phi_init,phi0,besselzers = None,undersamp = 1,name = 'density_mov'):
     if besselzers is None:
         besselzers = np.loadtxt('zerovals.txt')
 
-    nt = bhistdat.size[-1]
+    nt = bhistdat.shape[-1]
 
     [nlat,nphi] = sh.set_grid()
     cost = sh.cos_theta
     phi = np.linspace(0,2*np.pi,nphi)
     r = simpars.r
-    nn = ahistdat.shape[1]
+    nn = bhistdat.shape[1]
     sh.nvals = range(1,nn)
     [PH,CO,AR]  = np.meshgrid(phi,cost,r)
-
-    phi_init_plane = phi_init[cost==min(cost)]
-    phi_mov_plane = np.tile(phi_init_plane,[nt,1])
+    dt = simpars.dt
+    
+    midslice = cost==min(cost)
+    phi_init_plane = phi_init[midslice,:,:][0]
+    phi_mov_plane = np.tile(phi_init_plane,[nt,1,1])
+    phi_mov_plane = np.swapaxes(phi_mov_plane,0,2)
+    phi_mov_plane = np.swapaxes(phi_mov_plane,0,1)
+#    phi_mov = np.tile(np.zeros(phi_init.shape),[nt,1])
+    phi_now = phi_init
     for i in range(nt-1):
-        dphi = -phi_0*(1-phi_0)*my_div(bhistdat[:,:,i].T)
-        phi_mov_plane[:,:,:,i+1] = phi_mov[:,:,:,i] + dt*dphi
+        dphi = -phi0*(1-phi0)*utils.my_div(bhistdat[:,:,i],sh,simpars,besselzers)
+        phi_now += dt*dphi
+        phi_mov_plane[:,:,i+1] = phi_now[midslice,:,:][0]
 
-   
+    ar_plane = AR[cost==np.min(cost),:,:][0]
+    ph_plane = PH[cost==np.min(cost),:,:][0]
 
+    xp = ar_plane*np.cos(ph_plane)
+    yp = ar_plane*np.sin(ph_plane)
+
+    #now make the movie
+
+    minmax = [np.min(phi_mov_plane),np.max(phi_mov_plane)]
+    fig,ax1 = plt.subplots(1,1)
+    img = ax1.pcolormesh(xp,yp,np.zeros(ph_plane.shape),vmin = minmax[0],vmax = minmax[1],cmap = 'magma',shading='gouraud')
+    ax1.axis('off')
+    ax1.set_title(r'\delta\phi(\theta = \pi/2)$')
+    ax1.set_aspect('equal')
+
+    fig.colorbar(img,fraction=0.046, pad=0.04)
+    fig.tight_layout()
+    
+    def animate(i):
+
+        print('Frame '+str(i)+' / '+str(int(nt/undersamp)))
+        img.set_array(phi_mov_plane[:,:,i*undersamp].flatten())
+
+        return img,
+     
+    anim = FuncAnimation(fig, animate,frames=int(nt/undersamp), blit=True)
+    
+    anim.save('../movies/'+name+'.mp4', fps=30, extra_args=['-vcodec', 'libx264'])
+    
 
 def planar_disk_frame(nf,ahistdat,bhistdat,sh,r,simpars,besselzers = None,along = None):
     if besselzers is None:
@@ -158,8 +192,8 @@ def animate_soln(wahistdat,wbhistdat,mahistdat,mbhistdat,sh,r,pars,besselzers = 
     anim.save('movies/'+fname+'.mp4', fps=30, extra_args=['-vcodec', 'libx264'])
 
 
-ha,hb,ma,mb,s,r,pars = load_w_hist('randomstart')
+#ha,hb,ma,mb,s,r,pars = load_w_hist('randomstart')
 #x,y,p = planar_disk_frame(1,h,s,r)
 #plt.pcolormesh(x,y,p)
 #plt.show()
-animate_soln(ha,hb,ma,mb,s,r,pars,None,1,'test_full',[-0.5,0.5])
+#animate_soln(ha,hb,ma,mb,s,r,pars,None,1,'test_full',[-0.5,0.5])
