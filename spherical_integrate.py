@@ -49,8 +49,8 @@ def main(simpars,physpars,initarrs,sh):
     
     #### convert w init conds to harmonics
     
-    wanlm,wbnlm = utils.my_spat_to_sh(wth,wphi,sh,zers) 
-    manlm,mbnlm = utils.my_spat_to_sh(mth,mphi,sh,zers) 
+    wanlm,wbnlm = utils.my_spat_to_sh(wth,wphi,sh,simpars,zers) 
+    manlm,mbnlm = utils.my_spat_to_sh(mth,mphi,sh,simpars,zers) 
     
     #### Physics parameters
 
@@ -89,7 +89,7 @@ def main(simpars,physpars,initarrs,sh):
     
         pth = 2*(mth_eq -mth).copy()
         pphi = 2*(mphi_eq -mphi).copy()
-        panlm,pbnlm = utils.my_spat_to_sh(pth,pphi,sh,zers)
+        panlm,pbnlm = utils.my_spat_to_sh(pth,pphi,sh,simpars,zers)
     
         if i == 0: #for the first time step we use explicit Euler
             mth += dt*pth
@@ -103,21 +103,22 @@ def main(simpars,physpars,initarrs,sh):
             wbnlm = evol_long_pn*(3/2*pbnlm - 1/2*pbnlm_laststep) + evol_long_wn*(3/2*wbnlm - 1/2*wbnlm_laststep)
     
     
-        wth,wphi,wr = utils.my_sh_to_spat(wanlm,wbnlm,sh,zers)
+        wth,wphi,wr = utils.my_sh_to_spat(wanlm,wbnlm,sh,simpars,zers)
         pth_laststep = pth.copy()
         pphi_laststep = pphi.copy()
         panlm_laststep = panlm.copy()
         pbnlm_laststep = pbnlm.copy()
         wbnlm_laststep = wbnlm.copy()
-        manlm,mbnlm = utils.my_spat_to_sh(mth,mphi,sh,zers)
+        manlm,mbnlm = utils.my_spat_to_sh(mth,mphi,sh,simpars,zers)
     return wanlm_hist,wbnlm_hist,manlm_hist,mbnlm_hist,sh,r
     
-def save_out(wanlm,wbnlm,manlm,mbnlm,sh,r,name='wanlm_hist'):
+def save_out(wanlm,wbnlm,manlm,mbnlm,sh,r,simpars,name='wanlm_hist'):
     ### Save output to a file
-    with open('output_files/'+str(name)+'.pickle', 'wb') as f:
-        pickle.dump(wanlm_hist,f)
-        pickle.dump(manlm_hist,f)
-        pickle.dump(wbnlm_hist,f)
-        pickle.dump(mbnlm_hist,f)
+    with open('../output_files/'+str(name)+'.pickle', 'wb') as f:
+        pickle.dump(wanlm,f)
+        pickle.dump(manlm,f)
+        pickle.dump(wbnlm,f)
+        pickle.dump(mbnlm,f)
         pickle.dump(sh,f)
         pickle.dump(r,f)
+        pickle.dump(simpars,f)

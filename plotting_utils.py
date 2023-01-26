@@ -5,24 +5,48 @@ import sim_utils as utils
 import pickle
 from matplotlib.animation import FuncAnimation
 
-def load_w_hist():
-    with open('output_files/wanlm_hist.pickle','rb') as f:
+def load_w_hist(name):
+    with open('output_files/'+name+'.pickle','rb') as f:
         wahistdat = pickle.load(f)
         wbhistdat = pickle.load(f)
         mahistdat = pickle.load(f)
         mbhistdat = pickle.load(f)
         sh = pickle.load(f)
         r = pickle.load(f)
-    return wahistdat,wbhistdat,mahistdat,mbhistdat,sh,r
+        simpars = pickle.load(f)
+    return wahistdat,wbhistdat,mahistdat,mbhistdat,sh,r,simpars
 
-def planar_disk_frame(nf,ahistdat,bhistdat,sh,r,besselzers = None,along = None):
+def density_movie(bhistdat,sh,r,simpars,phi_init,phi0,besselzers = None,name = 'density_mov'):
+    if besselzers is None:
+        besselzers = np.loadtxt('zerovals.txt')
+
+    nt = bhistdat.size[-1]
+
+    [nlat,nphi] = sh.set_grid()
+    cost = sh.cos_theta
+    phi = np.linspace(0,2*np.pi,nphi)
+    r = simpars.r
+    nn = ahistdat.shape[1]
+    sh.nvals = range(1,nn)
+    [PH,CO,AR]  = np.meshgrid(phi,cost,r)
+
+    phi_init_plane = phi_init[cost==min(cost)]
+    phi_mov_plane = np.tile(phi_init_plane,[nt,1])
+    for i in range(nt-1):
+        dphi = -phi_0*(1-phi_0)*my_div(bhistdat[:,:,i].T)
+        phi_mov_plane[:,:,:,i+1] = phi_mov[:,:,:,i] + dt*dphi
+
+   
+
+
+def planar_disk_frame(nf,ahistdat,bhistdat,sh,r,simpars,besselzers = None,along = None):
     if besselzers is None:
         besselzers = np.loadtxt('zerovals.txt')
 
     [nlat,nphi] = sh.set_grid()
     cost = sh.cos_theta
     phi = np.linspace(0,2*np.pi,nphi)
-    sh.r = r
+    r = simpars.r
     nn = ahistdat.shape[1]
     sh.nvals = range(1,nn)
     [PH,CO,AR]  = np.meshgrid(phi,cost,r)
@@ -30,7 +54,7 @@ def planar_disk_frame(nf,ahistdat,bhistdat,sh,r,besselzers = None,along = None):
     wanlm_this = ahistdat[:,:,nf].T
     wbnlm_this = bhistdat[:,:,nf].T
 
-    wth,wph,wr = utils.my_sh_to_spat(wanlm_this,wbnlm_this,sh,besselzers)
+    wth,wph,wr = utils.my_sh_to_spat(wanlm_this,wbnlm_this,sh,simpars,besselzers)
 
     ## take the plane where cos(theta) = 0, aka theta = pi/2
     if along is None:
@@ -69,7 +93,7 @@ def planar_disk_frame(nf,ahistdat,bhistdat,sh,r,besselzers = None,along = None):
 
     return xp,yp,wph_plane,wph_planelines
 
-def animate_soln(wahistdat,wbhistdat,mahistdat,mbhistdat,sh,r,besselzers = None,undersamp = 1,fname = 'bla',minmax=[-1,1]):
+def animate_soln(wahistdat,wbhistdat,mahistdat,mbhistdat,sh,r,pars,besselzers = None,undersamp = 1,fname = 'bla',minmax=[-1,1]):
     if besselzers is None:
         besselzers = np.loadtxt('zerovals.txt')
     nt = wahistdat.shape[2]
@@ -79,7 +103,7 @@ def animate_soln(wahistdat,wbhistdat,mahistdat,mbhistdat,sh,r,besselzers = None,
     ax2 = ax[0,1]
     ax3 = ax[1,0]
     ax4 = ax[1,1]
-    xp0,yp0,ph_plane0,ph_line0 = planar_disk_frame(0,wahistdat,wbhistdat,sh,r,besselzers)
+    xp0,yp0,ph_plane0,ph_line0 = planar_disk_frame(0,wahistdat,wbhistdat,sh,r,pars,besselzers)
     ax2.set_ylim(minmax)
     ax2.set_xlabel('r')
     ax2.set_ylabel(r'$w_{\phi}\tau/3a$')
@@ -113,8 +137,8 @@ def animate_soln(wahistdat,wbhistdat,mahistdat,mbhistdat,sh,r,besselzers = None,
 
     def animate(i):
         print('Frame '+str(i)+' / '+str(int(nt/undersamp)))
-        xp,yp,wph_plane,wph_line = planar_disk_frame(i*undersamp,wahistdat,wbhistdat,sh,r,besselzers,'ph')
-        xp,yp,wr_plane,wr_line = planar_disk_frame(i*undersamp,wahistdat,wbhistdat,sh,r,besselzers,'r')
+        xp,yp,wph_plane,wph_line = planar_disk_frame(i*undersamp,wahistdat,wbhistdat,sh,r,pars,besselzers,'ph')
+        xp,yp,wr_plane,wr_line = planar_disk_frame(i*undersamp,wahistdat,wbhistdat,sh,r,pars,besselzers,'r')
         img.set_array(wph_plane.flatten())
         img2.set_array(wr_plane.flatten())
         line1.set_data(r,wph_line[0])
@@ -134,8 +158,8 @@ def animate_soln(wahistdat,wbhistdat,mahistdat,mbhistdat,sh,r,besselzers = None,
     anim.save('movies/'+fname+'.mp4', fps=30, extra_args=['-vcodec', 'libx264'])
 
 
-ha,hb,ma,mb,s,r = load_w_hist()
+ha,hb,ma,mb,s,r,pars = load_w_hist('randomstart')
 #x,y,p = planar_disk_frame(1,h,s,r)
 #plt.pcolormesh(x,y,p)
 #plt.show()
-animate_soln(ha,hb,ma,mb,s,r,None,5,'test_full',[-0.5,0.5])
+animate_soln(ha,hb,ma,mb,s,r,pars,None,1,'test_full',[-0.5,0.5])
