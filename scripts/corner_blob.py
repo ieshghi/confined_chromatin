@@ -6,8 +6,8 @@ import plotting_utils
 import shtns
 import numpy as np
 
-lmax = 20
-mmax = 15
+lmax = 30
+mmax = 30
 nmax = 30
 nr = 100
 rmax = 1
@@ -24,13 +24,13 @@ PH,CO,AR,sh = sim_utils.make_coords(simpars)
 wr,wth,wphi,mr,mth,mphi = sim_utils.initialize_arrays(simpars,sh)
 #Initial conditions here
 
-rho_init = np.exp(-(AR-0.5)**2/(0.1)**2)*np.exp(-CO**2/0.1**2)*np.exp(-PH**2/0.2**2)
-besselzers = np.loadtxt('../zerovals.txt')
-rholm = sim_utils.my_analys(rho_init,sh,simpars,besselzers)
-
-wr,wth,wphi = sim_utils.my_sh_to_spat(0*rholm,rholm,sh,simpars,besselzers)
-
-initarrs = (wr,wth,wphi,mr,mth,mphi,sh)
-wa,wb,ma,mb,sh,r = spherical_integrate.main(simpars,physpars,initarrs,sh)
-#spherical_integrate.save_out(wa,wb,ma,mb,sh,r,'corner_blob')
-plotting_utils.density_movie(wb,sh,r,simpars,rho_init,phi0,besselzers,undersamp = 1,name = 'density_mov')
+rho_init = np.exp(-(AR-0.5)**2/(0.1)**2)*np.exp(-CO**2/0.1**2)*np.exp(-(PH-np.pi)**2/0.5**2)
+#besselzers = np.loadtxt('../zerovals.txt')
+#rholm = sim_utils.my_analys(rho_init,sh,simpars,besselzers)
+#
+#wr,wth,wphi = sim_utils.my_sh_to_spat(0*rholm,rholm,sh,simpars,besselzers)
+#
+#initarrs = (wr,wth,wphi,mr,mth,mphi,sh)
+#wa,wb,ma,mb,sh,r = spherical_integrate.main(simpars,physpars,initarrs,sh)
+##spherical_integrate.save_out(wa,wb,ma,mb,sh,r,'corner_blob')
+#plotting_utils.density_movie(wb,sh,r,simpars,rho_init,phi0,besselzers,undersamp = 1,name = 'density_mov')
