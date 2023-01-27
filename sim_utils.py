@@ -30,7 +30,7 @@ def initialize_arrays(simpars,sh):
     return wr,wth,wphi,mr,mth,mphi
 
 class SimPars():
-    def __init__(self,lmax,mmax,nmax,nr,rmax,dt,nt):
+    def __init__(self,lmax,mmax,nmax,nr,rmax,dt,nt,r):
         self.lmax = lmax
         self.mmax = mmax
         self.nmax = nmax
@@ -38,6 +38,8 @@ class SimPars():
         self.rmax = rmax
         self.dt = dt
         self.nt = nt
+        self.r = r
+
 
 class PhysPars():
     def __init__(self,eps,lam,ls,ld):
@@ -70,7 +72,6 @@ class picklable_sht(shtns.sht,PickalableSWIG):
         self.args = args
         shtns.sht.__init__(self,*args)
 
-
 def shaperight(zers,sh): #converts the array of zeros to the correct shape, so it can be used to evolve the coefficients straightforwardly
     if zers.shape != (sh.lmax,sh.nmax):
         raise ValueError('Array of zeros does not match expected size.')
@@ -85,35 +86,33 @@ def shaperight(zers,sh): #converts the array of zeros to the correct shape, so i
 
     return zers_out
 
-def my_grad(rho,sh,besselzer=None):
-    r = sh.r
-    nmax = sh.nvals[-1]
-    nr = len(r)
+        
+def my_div(bnlm,sh,simpars,besselzer=None):
+    # each b_nlm mode looks like w_{nlm} = grad (j_l(r\alpha_{ln}/R)Y_{lm}). These modes are all eigenvalues of the Laplace operator, such that
+    # div(w_{nlm}) = -\alpha_ln^2/R^2 j_l(r\alpha_ln/R)Y_lm. All that remains is summing over them.
+
+    nmax = simpars.nmax
+    nr = simpars.nr
+    r = simpars.r/simpars.rmax
+    nlat,nphi = sh.set_grid()
     el = sh.l
+    em = sh.m
 
-    oynlm = np.tile(sh.spec_array(),[nmax,1])
-    opsinlm = np.tile(sh.spec_array(),[nmax,1])
-    olm_r = np.tile(sh.spec_array(),[nr,1])
-    olm_r_grad = np.tile(sh.spec_array(),[nr,1])
+    div_out = np.zeros((nlat,nphi,nr))
 
-    o_grad = np.zeros(rho.shape)
-    lm_num = olm_r.shape[1]
-    
-    for i in range(nr): #transform from spatial to spherical coords
-        olm_r[i,:] = sh.analys(rho[:,:,i])
+    lm_num = el.size
 
     for i in range(lm_num):
-        olm_r_grad[:,i] = np.gradient(olm_r[:,i],r,edge_order = 2)
+        for j in range(nmax):
+            rad = jn(el[i],r*besselzer[el[i]-1,j])
+            ang = sh.synth(bnlm[:,j])
+            div_out += -besselzer[el[i]-1,j]**2*ang[:,:,None]*rad[None,:]/(simpars.rmax)**2
+    
+    return div_out
 
-        oynlm[:,i] = func2bessel(r,olm_r[:,i],nmax,el[i],besselzer)
-        opsinlm[:,i] = func2bessel(r,olm_r[:,i],nmax,el[i],besselzer)
-
-
-    return oynlm,opsinlm
-
-def my_analys(rho,sh,besselzer=None):
-    r = sh.r
-    nmax = sh.nvals[-1]
+def my_analys(rho,sh,simpars,besselzer=None):
+    r = simpars.r 
+    nmax = simpars.nmax
     nr = len(r)
     el = sh.l
 
@@ -130,11 +129,11 @@ def my_analys(rho,sh,besselzer=None):
 
     return onlm
     
-def my_spat_to_sh(v_th,v_ph,sh,besselzer = None): #this routine converts from spatial to harmonic representation, including the radial decomposition into bessel functions. Only keeps the curly part.
+def my_spat_to_sh(v_th,v_ph,sh,simpars,besselzer = None): #this routine converts from spatial to harmonic representation, including the radial decomposition into bessel functions. Only keeps the curly part.
 
     #shape of v is (nr,nlat,nphi)
-    r = sh.r
-    nmax = sh.nvals[-1]
+    r = simpars.r
+    nmax = simpars.nmax
     nr = len(r)
     el = sh.l
 
@@ -162,13 +161,13 @@ def my_spat_to_sh(v_th,v_ph,sh,besselzer = None): #this routine converts from sp
 
     return anlm,bnlm
 
-def my_sh_to_spat(anlm,bnlm,sh,besselzer = None):
+def my_sh_to_spat(anlm,bnlm,sh,simpars,besselzer = None):
     
-    r = sh.r
-    nmax = sh.nvals[-1]
-    nr = len(r)
-    el = sh.l
+    nmax = simpars.nmax
+    nr = simpars.nr
+    r = simpars.r
     nlat,nphi = sh.set_grid()
+    el = sh.l
 
     alm_r = np.tile(sh.spec_array(),[nr,1])
     blm_r = np.tile(sh.spec_array(),[nr,1])
@@ -207,7 +206,7 @@ def func2bessel(x,y,nmax,l=1,besselzer = None):
         R = np.max(x)
         x_sc = x/R
         if besselzer is None:
-            besselzer = np.loadtxt('zerovals.txt')
+            besselzer = np.loadtxt('../zerovals.txt')
 
         lbesselzer = besselzer[l-1,:nmax]
         xalpha = np.outer(lbesselzer,x)
@@ -222,7 +221,7 @@ def func2bessel(x,y,nmax,l=1,besselzer = None):
 def bessel2func(x,ncoeffs,l=1,besselzer = None):
     nmax = len(ncoeffs)
     if besselzer is None:
-        besselzer = np.loadtxt('zerovals.txt')
+        besselzer = np.loadtxt('../zerovals.txt')
     lbesselzer = besselzer[l-1,:nmax]
 
 #    y = np.zeros(x.shape,dtype=complex)
