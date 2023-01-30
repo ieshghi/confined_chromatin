@@ -6,7 +6,7 @@ import pickle
 from matplotlib.animation import FuncAnimation
 
 def load_w_hist(name):
-    with open('output_files/'+name+'.pickle','rb') as f:
+    with open('../output_files/'+name+'.pickle','rb') as f:
         wahistdat = pickle.load(f)
         wbhistdat = pickle.load(f)
         mahistdat = pickle.load(f)
@@ -16,7 +16,7 @@ def load_w_hist(name):
         simpars = pickle.load(f)
     return wahistdat,wbhistdat,mahistdat,mbhistdat,sh,r,simpars
 
-def density_movie(bhistdat,sh,r,simpars,phi_init,phi0,besselzers = None,undersamp = 1,name = 'density_mov'):
+def density_movie(bhistdat,sh,r,simpars,phi_init,phi0,besselzers = None,undersamp = 1,name = 'density_mov',minmax = None):
     if besselzers is None:
         besselzers = np.loadtxt('zerovals.txt')
 
@@ -51,7 +51,9 @@ def density_movie(bhistdat,sh,r,simpars,phi_init,phi0,besselzers = None,undersam
 
     #now make the movie
 
-    minmax = [np.min(phi_mov_plane),np.max(phi_mov_plane)]
+    if minmax is None:
+        minmax = [np.min(phi_mov_plane),np.max(phi_mov_plane)]
+
     fig,ax1 = plt.subplots(1,1)
     img = ax1.pcolormesh(xp,yp,np.zeros(ph_plane.shape),vmin = minmax[0],vmax = minmax[1],cmap = 'magma',shading='gouraud')
     ax1.axis('off')
