@@ -73,6 +73,7 @@ def density_movie(bhistdat,sh,r,simpars,phi_init,phi0,besselzers = None,undersam
     anim = FuncAnimation(fig, animate,frames=int(nt/undersamp), blit=True)
     
     anim.save('../movies/'+name+'.mp4', fps=30, extra_args=['-vcodec', 'libx264'])
+    return phi_mov_plane
     
 
 def planar_disk_frame(nf,ahistdat,bhistdat,sh,r,simpars,besselzers = None,along = None):
