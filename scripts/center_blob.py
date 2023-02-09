@@ -18,7 +18,7 @@ mmax = 40
 nmax = 20
 nr = 100
 rmax = 1
-dt = 0.05
+dt = 0.1
 nt = 100
 phi0 = 0.5
 eps = -1
@@ -42,7 +42,7 @@ X = AR*np.cos(PH)*np.sqrt(1-CO**2)
 Y = AR*np.sin(PH)*np.sqrt(1-CO**2)
 Z = AR*CO
 
-rho_init = np.exp(-((X-0.5)**2 + Y**2 + Z**2)/0.01)
+rho_init = np.exp(-((X)**2 + Y**2 + Z**2)/0.01)
 
 #rho_init = np.exp(-(AR-0.5)**2/(0.1)**2)*np.exp(-CO**2/0.1**2)*np.exp(-(PH-np.pi)**2/0.01**2)
 print('Arrays initialized')
@@ -56,7 +56,7 @@ sh.nmax = nmax
 
 zers_keep = sim_utils.shaperight(besselzers[:lmax,:nmax],sh).T
 
-gradphi_to_w = -ls**2*np.sqrt(ld)
+gradphi_to_w = -ls**2*np.sqrt(ld)/(1+ls**2*zers_keep**2/rmax**2) 
 bnlm = gradphi_to_w*sim_utils.my_analys(rho_init,sh,simpars,besselzers,p)
 anlm = 0*bnlm
 print('Initial conditions calculated')
@@ -68,5 +68,5 @@ initarrs = (wr,wth,wphi,mr,mth,mphi,sh)
 wa,wb,ma,mb,sh,r = spherical_integrate.main(simpars,physpars,initarrs,sh,besselzers,p)
 #spherical_integrate.save_out(wa,wb,ma,mb,sh,r,simpars,'corner_blob')
 #wa,wb,ma,mb,sh,r,simpars = plotting_utils.load_w_hist('corner_blob')
-plotting_utils.density_movie(wb,sh,r,simpars,rho_init,phi0,besselzers,undersamp = 1,name = 'density_mov_betterunits_fine',minmax = [np.min(rho_init),np.max(rho_init)],pool = p)
+plotting_utils.density_movie(wb,sh,r,simpars,rho_init,phi0,besselzers,undersamp = 1,name = 'density_mov_centered',minmax = [np.min(rho_init),np.max(rho_init)],pool = p)
 #plotting_utils.animate_soln_arrows(wa,wb,sh,r,simpars,besselzers,undersamp = 10,fname = 'diffusive_arrows',spatial_undersamp = 10)

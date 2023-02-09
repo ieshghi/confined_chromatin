@@ -16,12 +16,13 @@ import shtns
 import sim_utils as utils
 import pickle
 
-def main(simpars,physpars,initarrs,sh,zers = None): 
+def main(simpars,physpars,initarrs,sh,zers = None,pool = None): 
     lmax = simpars.lmax  # maximum degree of spherical harmonic representation.
     mmax = simpars.mmax  # maximum order of spherical harmonic representation.  
     nmax = simpars.nmax  # maximum order of radial Bessel function representation
     nr = simpars.nr      # number of points in radial grid 
     rmax = simpars.rmax  # radius of the sphere
+    iflinear = simpars.iflinear #whether to include the nonlinearity in m_eq
 
     r = np.linspace(0,1,nr)*rmax #radial positions
     
@@ -50,8 +51,8 @@ def main(simpars,physpars,initarrs,sh,zers = None):
     
     #### convert w init conds to harmonics
     
-    wanlm,wbnlm = utils.my_spat_to_sh(wth,wphi,sh,simpars,zers) 
-    manlm,mbnlm = utils.my_spat_to_sh(mth,mphi,sh,simpars,zers) 
+    wanlm,wbnlm = utils.my_spat_to_sh(wth,wphi,sh,simpars,zers,pool) 
+    manlm,mbnlm = utils.my_spat_to_sh(mth,mphi,sh,simpars,zers,pool) 
     
     #### Physics parameters
 
@@ -86,11 +87,11 @@ def main(simpars,physpars,initarrs,sh,zers = None):
         manlm_hist[:,:,i] = manlm.T
         wbnlm_hist[:,:,i] = wbnlm.T
         mbnlm_hist[:,:,i] = mbnlm.T
-        mr_eq,mth_eq,mphi_eq = utils.meq(wr,wth,wphi)
+        mr_eq,mth_eq,mphi_eq = utils.meq(wr,wth,wphi,iflinear)
     
         pth = 2*(mth_eq -mth).copy()
         pphi = 2*(mphi_eq -mphi).copy()
-        panlm,pbnlm = utils.my_spat_to_sh(pth,pphi,sh,simpars,zers)
+        panlm,pbnlm = utils.my_spat_to_sh(pth,pphi,sh,simpars,zers,pool)
     
         if i == 0: #for the first time step we use explicit Euler
             mth += dt*pth
@@ -104,13 +105,14 @@ def main(simpars,physpars,initarrs,sh,zers = None):
             wbnlm = evol_long_pn*(3/2*pbnlm - 1/2*pbnlm_laststep) + evol_long_wn*(3/2*wbnlm - 1/2*wbnlm_laststep)
     
     
-        wth,wphi,wr = utils.my_sh_to_spat(wanlm,wbnlm,sh,simpars,zers)
+        wth,wphi,wr = utils.my_sh_to_spat(wanlm,wbnlm,sh,simpars,zers,pool)
         pth_laststep = pth.copy()
         pphi_laststep = pphi.copy()
         panlm_laststep = panlm.copy()
         pbnlm_laststep = pbnlm.copy()
         wbnlm_laststep = wbnlm.copy()
-        manlm,mbnlm = utils.my_spat_to_sh(mth,mphi,sh,simpars,zers)
+        manlm,mbnlm = utils.my_spat_to_sh(mth,mphi,sh,simpars,zers,pool)
+
     return wanlm_hist,wbnlm_hist,manlm_hist,mbnlm_hist,sh,r
     
 def save_out(wanlm,wbnlm,manlm,mbnlm,sh,r,simpars,name='wanlm_hist'):

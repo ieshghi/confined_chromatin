@@ -4,6 +4,7 @@ import shtns
 import sim_utils as utils
 import pickle
 from matplotlib.animation import FuncAnimation
+import multiprocessing as mlp
 
 def load_w_hist(name):
     with open('../output_files/'+name+'.pickle','rb') as f:
@@ -16,7 +17,7 @@ def load_w_hist(name):
         simpars = pickle.load(f)
     return wahistdat,wbhistdat,mahistdat,mbhistdat,sh,r,simpars
 
-def density_movie(bhistdat,sh,r,simpars,phi_init,phi0,besselzers = None,undersamp = 1,name = 'density_mov',minmax = None):
+def density_movie(bhistdat,sh,r,simpars,phi_init,phi0,besselzers = None,undersamp = 1,name = 'density_mov',minmax = None,pool = None):
     if besselzers is None:
         besselzers = np.loadtxt('zerovals.txt')
 
@@ -31,7 +32,7 @@ def density_movie(bhistdat,sh,r,simpars,phi_init,phi0,besselzers = None,undersam
     [PH,CO,AR]  = np.meshgrid(phi,cost,r)
     dt = simpars.dt
     
-    midslice = cost==min(cost)
+    midslice = cost==np.min(np.abs(cost))
     phi_init_plane = phi_init[midslice,:,:][0]
     phi_mov_plane = np.tile(phi_init_plane,[nt,1,1])
     phi_mov_plane = np.swapaxes(phi_mov_plane,0,2)
@@ -39,7 +40,9 @@ def density_movie(bhistdat,sh,r,simpars,phi_init,phi0,besselzers = None,undersam
 #    phi_mov = np.tile(np.zeros(phi_init.shape),[nt,1])
     phi_now = phi_init
     for i in range(nt-1):
-        dphi = -phi0*(1-phi0)*utils.my_div(bhistdat[:,:,i],sh,simpars,besselzers)
+        print(i)
+        a = utils.my_div(bhistdat[:,:,i],sh,simpars,besselzers,pool)
+        dphi = -phi0*(1-phi0)*a
         phi_now += dt*dphi
         phi_mov_plane[:,:,i+1] = phi_now[midslice,:,:][0]
 
@@ -74,9 +77,8 @@ def density_movie(bhistdat,sh,r,simpars,phi_init,phi0,besselzers = None,undersam
     
     anim.save('../movies/'+name+'.mp4', fps=30, extra_args=['-vcodec', 'libx264'])
     return phi_mov_plane
-    
-
-def planar_disk_frame(nf,ahistdat,bhistdat,sh,r,simpars,besselzers = None,along = None):
+ 
+def planar_disk_frame_cart(nf,ahistdat,bhistdat,sh,r,simpars,besselzers = None,pool = None):
     if besselzers is None:
         besselzers = np.loadtxt('zerovals.txt')
 
@@ -87,48 +89,85 @@ def planar_disk_frame(nf,ahistdat,bhistdat,sh,r,simpars,besselzers = None,along 
     nn = ahistdat.shape[1]
     sh.nvals = range(1,nn)
     [PH,CO,AR]  = np.meshgrid(phi,cost,r)
+    midslice = cost==np.min(abs(cost))
 
     wanlm_this = ahistdat[:,:,nf].T
     wbnlm_this = bhistdat[:,:,nf].T
 
-    wth,wph,wr = utils.my_sh_to_spat(wanlm_this,wbnlm_this,sh,simpars,besselzers)
+    wth,wph,wr = utils.my_sh_to_spat(wanlm_this,wbnlm_this,sh,simpars,besselzers,pool)
+    wr_plane = wr[midslice,:,:][0]
+    wth_plane = wth[midslice,:,:][0]
+    wph_plane = wph[midslice,:,:][0]
+
+
+    ar_plane = AR[midslice,:,:][0]
+    ph_plane = PH[midslice,:,:][0]
+
+    wx_plane = np.cos(ph_plane)*wr_plane-np.sin(ph_plane)*wph_plane
+    wy_plane = np.sin(ph_plane)*wr_plane+np.cos(ph_plane)*wph_plane
+
+    xp = ar_plane*np.cos(ph_plane)
+    yp = ar_plane*np.sin(ph_plane)
+
+    return xp,yp,wx_plane,wy_plane
+
+   
+
+def planar_disk_frame(nf,ahistdat,bhistdat,sh,r,simpars,besselzers = None,along = None,pool = None):
+    if besselzers is None:
+        besselzers = np.loadtxt('zerovals.txt')
+
+    [nlat,nphi] = sh.set_grid()
+    cost = sh.cos_theta
+    phi = np.linspace(0,2*np.pi,nphi)
+    r = simpars.r
+    nn = ahistdat.shape[1]
+    sh.nvals = range(1,nn)
+    [PH,CO,AR]  = np.meshgrid(phi,cost,r)
+    midslice = cost==np.min(abs(cost))
+
+    wanlm_this = ahistdat[:,:,nf].T
+    wbnlm_this = bhistdat[:,:,nf].T
+
+    wth,wph,wr = utils.my_sh_to_spat(wanlm_this,wbnlm_this,sh,simpars,besselzers,pool)
 
     ## take the plane where cos(theta) = 0, aka theta = pi/2
     if along is None:
-        wph_plane = wph[cost==np.min(cost),:,:][0]
-        wph_planelines = wph[cost==np.min(cost),0,:][0]
-        wph_planelines = np.vstack((wph_planelines,wph[cost==np.min(cost),int(nphi/4),:][0]))
-        wph_planelines = np.vstack((wph_planelines,wph[cost==np.min(cost),int(nphi/2),:][0]))
-        wph_planelines = np.vstack((wph_planelines,wph[cost==np.min(cost),int(3*nphi/4),:][0]))
+        wph_plane = wph[midslice,:,:][0]
+        wph_planelines = wph[midslice,0,:][0]
+        wph_planelines = np.vstack((wph_planelines,wph[midslice,int(nphi/4),:][0]))
+        wph_planelines = np.vstack((wph_planelines,wph[midslice,int(nphi/2),:][0]))
+        wph_planelines = np.vstack((wph_planelines,wph[midslice,int(3*nphi/4),:][0]))
     elif along == 'r':
-        wph_plane = wr[cost==np.min(cost),:,:][0]
-        wph_planelines = wr[cost==np.min(cost),0,:][0]
-        wph_planelines = np.vstack((wph_planelines,wr[cost==np.min(cost),int(nphi/4),:][0]))
-        wph_planelines = np.vstack((wph_planelines,wr[cost==np.min(cost),int(nphi/2),:][0]))
-        wph_planelines = np.vstack((wph_planelines,wr[cost==np.min(cost),int(3*nphi/4),:][0]))
+        wph_plane = wr[midslice,:,:][0]
+        wph_planelines = wr[midslice,0,:][0]
+        wph_planelines = np.vstack((wph_planelines,wr[midslice,int(nphi/4),:][0]))
+        wph_planelines = np.vstack((wph_planelines,wr[midslice,int(nphi/2),:][0]))
+        wph_planelines = np.vstack((wph_planelines,wr[midslice,int(3*nphi/4),:][0]))
     elif along == 'th':
-        wph_plane = wth[cost==np.min(cost),:,:][0]
-        wph_planelines = wth[cost==np.min(cost),0,:][0]
-        wph_planelines = np.vstack((wph_planelines,wth[cost==np.min(cost),int(nphi/4),:][0]))
-        wph_planelines = np.vstack((wph_planelines,wth[cost==np.min(cost),int(nphi/2),:][0]))
-        wph_planelines = np.vstack((wph_planelines,wth[cost==np.min(cost),int(3*nphi/4),:][0]))
+        wph_plane = wth[midslice,:,:][0]
+        wph_planelines = wth[midslice,0,:][0]
+        wph_planelines = np.vstack((wph_planelines,wth[midslice,int(nphi/4),:][0]))
+        wph_planelines = np.vstack((wph_planelines,wth[midslice,int(nphi/2),:][0]))
+        wph_planelines = np.vstack((wph_planelines,wth[midslice,int(3*nphi/4),:][0]))
     elif along == 'ph':
-        wph_plane = wph[cost==np.min(cost),:,:][0]
-        wph_planelines = wph[cost==np.min(cost),0,:][0]
-        wph_planelines = np.vstack((wph_planelines,wph[cost==np.min(cost),int(nphi/4),:][0]))
-        wph_planelines = np.vstack((wph_planelines,wph[cost==np.min(cost),int(nphi/2),:][0]))
-        wph_planelines = np.vstack((wph_planelines,wph[cost==np.min(cost),int(3*nphi/4),:][0]))
+        wph_plane = wph[midslice,:,:][0]
+        wph_planelines = wph[midslice,0,:][0]
+        wph_planelines = np.vstack((wph_planelines,wph[midslice,int(nphi/4),:][0]))
+        wph_planelines = np.vstack((wph_planelines,wph[midslice,int(nphi/2),:][0]))
+        wph_planelines = np.vstack((wph_planelines,wph[midslice,int(3*nphi/4),:][0]))
 
     else:
         raise ValueError('Please enter a valid plotting direction')
 
-    ar_plane = AR[cost==np.min(cost),:,:][0]
-    ph_plane = PH[cost==np.min(cost),:,:][0]
+    ar_plane = AR[midslice,:,:][0]
+    ph_plane = PH[midslice,:,:][0]
 
     xp = ar_plane*np.cos(ph_plane)
     yp = ar_plane*np.sin(ph_plane)
 
     return xp,yp,wph_plane,wph_planelines
+
 
 def animate_soln(wahistdat,wbhistdat,mahistdat,mbhistdat,sh,r,pars,besselzers = None,undersamp = 1,fname = 'bla',minmax=[-1,1]):
     if besselzers is None:
@@ -194,6 +233,41 @@ def animate_soln(wahistdat,wbhistdat,mahistdat,mbhistdat,sh,r,pars,besselzers = 
     
     anim.save('movies/'+fname+'.mp4', fps=30, extra_args=['-vcodec', 'libx264'])
 
+def animate_soln_arrows(wahistdat,wbhistdat,sh,r,pars,besselzers = None,undersamp = 1,fname = 'bla',minmax=[-1,1],pool = None,spatial_undersamp = None):
+    if besselzers is None:
+        besselzers = np.loadtxt('zerovals.txt')
+    nt = wahistdat.shape[2]
+    
+    fig,ax = plt.subplots(1,1)
+    xp0,yp0,wx0,wy0 = planar_disk_frame_cart(0,wahistdat,wbhistdat,sh,r,pars,besselzers,pool)
+    if spatial_undersamp is not None:
+        ns = spatial_undersamp
+        xp0 = xp0[0::ns,0::ns]
+        yp0 = yp0[0::ns,0::ns]
+        wx0 = wx0[0::ns,0::ns]
+        wy0 = wy0[0::ns,0::ns]
+    img = ax.quiver(xp0,yp0,wx0,wy0)
+    ax.axis('off')
+    ax.set_title(r'$\vec{w}(\theta = \pi/2)$')
+    ax.set_xlabel('x')
+    ax.set_ylabel('y')
+    ax.set_aspect('equal')
+
+    fig.tight_layout()
+
+    def animate(i):
+        print('Frame '+str(i)+' / '+str(int(nt/undersamp)))
+        xp,yp,wx,wy = planar_disk_frame_cart(i*undersamp,wahistdat,wbhistdat,sh,r,pars,besselzers,pool)
+        if spatial_undersamp is not None:
+            wx = wx[0::ns,0::ns]
+            wy = wy[0::ns,0::ns]
+        img.set_UVC(wx,wy)
+
+        return img,
+
+    anim = FuncAnimation(fig, animate,frames=int(nt/undersamp), blit=True)
+    
+    anim.save('../movies/'+fname+'.mp4', fps=30, extra_args=['-vcodec', 'libx264'])
 
 #ha,hb,ma,mb,s,r,pars = load_w_hist('randomstart')
 #x,y,p = planar_disk_frame(1,h,s,r)
