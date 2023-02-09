@@ -8,23 +8,24 @@ import numpy as np
 import multiprocessing as mlp
 import time
 import datetime
+import matplotlib.pyplot as plt
 
 ###debugging
 #import matplotlib.pyplot as plt
 ###
 
-lmax = 20
-mmax = 20
+lmax = 10
+mmax = 10
 nmax = 10
 nr = 100
 rmax = 1
 dt = 0.1
-nt = 100
+nt = 4
 phi0 = 0.5
 eps = -1
 lam = 0.001
 ls = 0.001
-ld = 0.1/ls**4
+ld = 0.1
 iflinear = 1
 
 l_sim = 1
@@ -39,38 +40,40 @@ simpars = sim_utils.SimPars(lmax,mmax,nmax,nr,rmax,dt,nt,np.linspace(0,1,nr)*rma
 physpars = sim_utils.PhysPars(eps,lam,ls,ld) #store physical parameters
 
 PH,CO,AR,sh = sim_utils.make_coords(simpars)
+sh.nmax = nmax
 cost = sh.cos_theta
 print('Coords made.')
 
 besselzers = np.loadtxt('../zerovals.txt')
+zers = sim_utils.shaperight(besselzers[:lmax,:nmax],sh)
 print('Zeros loaded')
 
-ncpu = 40
+ncpu = 6
 p = mlp.Pool(ncpu)
 print('Pool started')
 
-sh.nmax = nmax
 lm_num = len(sh.l)
 el = sh.l
 em = sh.m
 
-anlm = np.empty((lm_num,nmax),dtype = complex)
-bnlm = np.empty((lm_num,nmax),dtype = complex)
+anlm = np.zeros((lm_num,nmax),dtype = complex)
+bnlm = np.zeros((lm_num,nmax),dtype = complex)
 
 m_anlm = np.zeros((lm_num,nmax),dtype = complex)
 m_bnlm = np.zeros((lm_num,nmax),dtype = complex)
 
-zero_thismode = besselzers[l,n]
+anlm[(el==l_sim)*(em==m_sim),n_sim] = a_init 
+bnlm[(el==l_sim)*(em==m_sim),n_sim] = b_init
 
-anlm[el==l_sim & em==m_sim,n_sim] = a_init 
-bnlm[el==l_sim & em==m_sim,n_sim] = b_init
-
-wth,wphi,wr = sim_utils.my_sh_to_spat(anlm,bnlm,sh,simpars,besselzers,p)
-mth,mphi,mr = sim_utils.my_sh_to_spat(m_anlm,m_bnlm,sh,simpars,besselzers,p)
+wth,wphi,wr = sim_utils.my_sh_to_spat(anlm,bnlm,sh,simpars,zers,p)
+mth,mphi,mr = sim_utils.my_sh_to_spat(m_anlm,m_bnlm,sh,simpars,zers,p)
 
 initarrs = (wr,wth,wphi,mr,mth,mphi,sh) 
 
-wa,wb,ma,mb,sh,r = spherical_integrate.main(simpars,physpars,initarrs,sh,besselzers,p)
+anlm_2,bnlm_2 = sim_utils.my_spat_to_sh(wth,wphi,sh,simpars,zers,p)
+
+wa,wb,ma,mb,sh,r = spherical_integrate.main(simpars,physpars,initarrs,sh,zers,p)
+zero_thismode = zers[(el==l_sim)*(em==m_sim),n_sim]
 
 combo_a = zero_thismode**2*lam**2/rmax**2
 combo_bd = zero_thismode**2*ld**2/rmax**2
@@ -86,22 +89,22 @@ tarr = dt*np.array(range(nt))
 a_evol = a_init*np.exp(tarr*gamma_a)
 b_evol = np.exp(-tarr*gamma_b/2)*(b_init*np.cosh(tarr/2*(gamma_b**2-4*k_b + 0j)**(1/2)) + (gamma_b*b_init + 2*b_init_prime)*np.sinh(tarr/2*(gamma_b**2-4*k_b + 0j)**(1/2))/((gamma_b**2-4*k_b + 0j)**(1/2)))
 
-wa_hist = wa[el==l_sim & em==m_sim,n_sim,:]
-wb_hist = wb[el==l_sim & em==m_sim,n_sim,:]
+wa_hist = wa[(el==l_sim)*(em==m_sim),n_sim,:]
+wb_hist = wb[(el==l_sim)*(em==m_sim),n_sim,:]
 
 name = 'l'+str(l_sim)+'m'+str(m_sim)+'n'+str(n_sim)+'hist.pdf'
 
 fig,(ax1,ax2) = plt.subplots(1,2)
 ax1.plot(tarr,a_evol,'b--',label='Analytical')
-ax1.plot(tarr,wa_hist,'rx',label='Numerical')
+ax1.plot(tarr,wa_hist[0],'rx',label='Numerical')
 ax2.plot(tarr,b_evol,'b--',label='Analytical')
-ax2.plot(tarr,wb_hist,'rx',label='Numerical')
+ax2.plot(tarr,wb_hist[0],'rx',label='Numerical')
 
 ax1.set_xlabel('Time')
 ax1.set_ylabel('Mode amplitude')
 ax1.set_title('Transverse')
 
-ax1.set_xlabel('Time')
-ax1.set_ylabel('Mode amplitude')
-ax1.set_title('Longitudinal')
-fig.savefig('plots/'+name)
+ax2.set_xlabel('Time')
+ax2.set_ylabel('Mode amplitude')
+ax2.set_title('Longitudinal')
+plt.show()

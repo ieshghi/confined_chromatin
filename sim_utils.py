@@ -82,12 +82,11 @@ def shaperight(zers,sh): #converts the array of zeros to the correct shape, so i
     el = sh.l
     for i in range(len(el)):
         if el[i]==0:
-            zers_out[i,:] = 0
+            zers_out[i,:] = np.pi*np.array(range(sh.nmax))
         else:
             zers_out[i,:] = zers[el[i]-1,:]
 
     return zers_out
-
         
 def my_div(bnlm,sh,simpars,besselzer=None,pool = None):
     # each b_nlm mode looks like w_{nlm} = grad (j_l(r\alpha_{ln}/R)Y_{lm}). These modes are all eigenvalues of the Laplace operator, such that
@@ -116,7 +115,7 @@ def divcomponent_packed(args):
 
     return besselzer**2*ang[:,:,None]*rad[None,:]/(r[-1]**2)
 
-def my_analys(rho,sh,simpars,besselzer=None,pool = None):
+def my_analys(rho,sh,simpars,besselzer,pool = None):
     r = simpars.r 
     nmax = simpars.nmax
     nr = len(r)
@@ -134,7 +133,7 @@ def my_analys(rho,sh,simpars,besselzer=None,pool = None):
     
     return onlm
     
-def my_spat_to_sh(v_th,v_ph,sh,simpars,besselzer = None,pool = None): #this routine converts from spatial to harmonic representation, including the radial decomposition into bessel functions. Only keeps the curly part.
+def my_spat_to_sh(v_th,v_ph,sh,simpars,besselzer,pool = None): #this routine converts from spatial to harmonic representation, including the radial decomposition into bessel functions. Only keeps the curly part.
 
     r = simpars.r
     nmax = simpars.nmax
@@ -169,7 +168,7 @@ def my_spat_to_sh(v_th,v_ph,sh,simpars,besselzer = None,pool = None): #this rout
         anlm = np.array(pool.map(func2bessel_packed,args_a)).T
         bnlm = np.array(pool.map(func2bessel_packed,args_b)).T
 
-    return anlm,bnlm
+    return anlm.T,bnlm.T
 
 def my_sh_to_spat(anlm,bnlm,sh,simpars,besselzer = None,pool = None):
 
@@ -186,8 +185,8 @@ def my_sh_to_spat(anlm,bnlm,sh,simpars,besselzer = None,pool = None):
     one_spat = sh.spat_array()
     two_spat = sh.spat_array()
 
-    args_a = ((r,anlm[:,i],el[i],besselzer) for i in range(lm_num))
-    args_b = ((r,bnlm[:,i],el[i],besselzer) for i in range(lm_num))
+    args_a = ((r,anlm[i,:],el[i],besselzer) for i in range(lm_num))
+    args_b = ((r,bnlm[i,:],el[i],besselzer) for i in range(lm_num))
 
     if pool is None:
         alm_r = np.array(list(map(bessel2func_packed,args_a))).T.copy()
@@ -240,9 +239,10 @@ def bessel2func(x,ncoeffs,l=1,besselzer = None):
     return np.sum(jn(l,x[:,None]*lbesselzer[None,:])*ncoeffs,1)
 
 def genzeros(lmax,mmax):
-    zervals = np.zeros((lmax,mmax))
-    for i in range(1,lmax+1):
-        zervals[i-1,:] = np.array(spherical_jn_zeros(i,mmax,int(1e6)))
+    zervals = np.zeros((lmax+1,mmax))
+    for i in range(lmax+1):
+        if i > 0:
+            zervals[i,:] = np.array(spherical_jn_zeros(i,mmax,int(1e6)))
 
     np.savetxt('zerovals.txt',zervals)
 

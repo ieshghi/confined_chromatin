@@ -48,6 +48,9 @@ def main(simpars,physpars,initarrs,sh,zers = None,pool = None):
     
     if zers is None:
         zers = np.loadtxt('../zerovals.txt') #load zeros of the spherical bessel functions
+        zers_keep = utils.shaperight(zers[:lmax,:nmax],sh).T #keep only the relevant zeros
+    else:
+        zers_keep = zers
     
     #### convert w init conds to harmonics
     
@@ -71,7 +74,6 @@ def main(simpars,physpars,initarrs,sh,zers = None,pool = None):
     mbnlm_hist = np.zeros((sh.nlm,nmax,nt),dtype = complex)
     
     ### Time evolution arrays
-    zers_keep = utils.shaperight(zers[:lmax,:nmax],sh).T #keep only the relevant zeros
     evol_curl = dt*(eps+1)/(1+(zers_keep*lam/rmax)**2)
     
     bigA = (2*ld**2*zers_keep**2/rmax**2)/(1+ls**2*zers_keep**2/rmax**2)
@@ -83,10 +85,10 @@ def main(simpars,physpars,initarrs,sh,zers = None,pool = None):
     ### Time evolution loop
     for i in range(nt):
         print('Timestep: '+str(i))
-        wanlm_hist[:,:,i] = wanlm.T
-        manlm_hist[:,:,i] = manlm.T
-        wbnlm_hist[:,:,i] = wbnlm.T
-        mbnlm_hist[:,:,i] = mbnlm.T
+        wanlm_hist[:,:,i] = wanlm
+        manlm_hist[:,:,i] = manlm
+        wbnlm_hist[:,:,i] = wbnlm
+        mbnlm_hist[:,:,i] = mbnlm
         mr_eq,mth_eq,mphi_eq = utils.meq(wr,wth,wphi,iflinear)
     
         pth = 2*(mth_eq -mth).copy()
