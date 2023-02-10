@@ -102,7 +102,7 @@ def my_div(bnlm,sh,simpars,besselzer=None,pool = None):
 
     ang = [sh.synth(bnlm[:,i]) for i in range(nmax)]
 
-    args = ((r,ang[j],el[i],sh,besselzer[el[i]-1,j]) for i in range(lm_num) for j in range(nmax))
+    args = ((r,ang[j],el[i],sh,besselzer[el[i],j]) for i in range(lm_num) for j in range(nmax))
 
     if pool is None:
         return sum(list(map(divcomponent_packed,args)))
@@ -112,6 +112,7 @@ def my_div(bnlm,sh,simpars,besselzer=None,pool = None):
 def divcomponent_packed(args):
     r,ang,el,sh,besselzer = args
     rad = jn(el,r*besselzer)
+    print(el)
 
     return besselzer**2*ang[:,:,None]*rad[None,:]/(r[-1]**2)
 
@@ -131,7 +132,7 @@ def my_analys(rho,sh,simpars,besselzer,pool = None):
     else:
         onlm = np.array(pool.map(func2bessel_packed,args)).T
     
-    return onlm
+    return onlm.T
     
 def my_spat_to_sh(v_th,v_ph,v_r,sh,simpars,besselzer,pool = None): #this routine converts from spatial to harmonic representation, including the radial decomposition into bessel functions. Only keeps the curly part.
 

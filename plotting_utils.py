@@ -126,8 +126,8 @@ def planar_disk_frame(nf,ahistdat,bhistdat,sh,r,simpars,besselzers = None,along 
     [PH,CO,AR]  = np.meshgrid(phi,cost,r)
     midslice = cost==np.min(abs(cost))
 
-    wanlm_this = ahistdat[:,:,nf].T
-    wbnlm_this = bhistdat[:,:,nf].T
+    wanlm_this = ahistdat[:,:,nf]
+    wbnlm_this = bhistdat[:,:,nf]
 
     wth,wph,wr = utils.my_sh_to_spat(wanlm_this,wbnlm_this,sh,simpars,besselzers,pool)
 
@@ -231,7 +231,7 @@ def animate_soln(wahistdat,wbhistdat,mahistdat,mbhistdat,sh,r,pars,besselzers = 
 
     anim = FuncAnimation(fig, animate,frames=int(nt/undersamp), blit=True)
     
-    anim.save('movies/'+fname+'.mp4', fps=30, extra_args=['-vcodec', 'libx264'])
+    anim.save('../movies/'+fname+'.mp4', fps=30, extra_args=['-vcodec', 'libx264'])
 
 def animate_soln_arrows(wahistdat,wbhistdat,sh,r,pars,besselzers = None,undersamp = 1,fname = 'bla',minmax=[-1,1],pool = None,spatial_undersamp = None):
     if besselzers is None:
