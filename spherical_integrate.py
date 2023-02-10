@@ -54,8 +54,8 @@ def main(simpars,physpars,initarrs,sh,zers = None,pool = None):
     
     #### convert w init conds to harmonics
     
-    wanlm,wbnlm = utils.my_spat_to_sh(wth,wphi,sh,simpars,zers,pool) 
-    manlm,mbnlm = utils.my_spat_to_sh(mth,mphi,sh,simpars,zers,pool) 
+    wanlm,wbnlm = utils.my_spat_to_sh(wth,wphi,wr,sh,simpars,zers,pool) 
+    manlm,mbnlm = utils.my_spat_to_sh(mth,mphi,mr,sh,simpars,zers,pool) 
     
     #### Physics parameters
 
@@ -90,30 +90,32 @@ def main(simpars,physpars,initarrs,sh,zers = None,pool = None):
         wbnlm_hist[:,:,i] = wbnlm
         mbnlm_hist[:,:,i] = mbnlm
         mr_eq,mth_eq,mphi_eq = utils.meq(wr,wth,wphi,iflinear)
-    
+
         pth = 2*(mth_eq -mth).copy()
         pphi = 2*(mphi_eq -mphi).copy()
-        panlm,pbnlm = utils.my_spat_to_sh(pth,pphi,sh,simpars,zers,pool)
+        pr = 2*(mr_eq -mr).copy()
+        panlm,pbnlm = utils.my_spat_to_sh(pth,pphi,pr,sh,simpars,zers,pool)
     
         if i == 0: #for the first time step we use explicit Euler
             mth += dt*pth
             mphi += dt*pphi
+            mr += dt*pr
             wanlm += evol_curl*panlm
             wbnlm = evol_long_pn*pbnlm + evol_long_wn*wbnlm
         else: #adams-bashforth two-step
             mth += dt*(3/2*pth-1/2*pth_laststep)
             mphi += dt*(3/2*pphi-1/2*pphi_laststep)
-            wanlm += evol_curl*(3/2*panlm-1/2*panlm_laststep)
-            wbnlm = evol_long_pn*(3/2*pbnlm - 1/2*pbnlm_laststep) + evol_long_wn*(3/2*wbnlm - 1/2*wbnlm_laststep)
-    
+            mr += dt*(3/2*pr-1/2*pr_laststep)
+            wanlm += evol_curl*(3/2*panlm - 1/2*panlm_laststep)
+            wbnlm = evol_long_pn*(3/2*pbnlm - 1/2*pbnlm_laststep) + evol_long_wn*wbnlm
     
         wth,wphi,wr = utils.my_sh_to_spat(wanlm,wbnlm,sh,simpars,zers,pool)
         pth_laststep = pth.copy()
         pphi_laststep = pphi.copy()
+        pr_laststep = pr.copy()
         panlm_laststep = panlm.copy()
         pbnlm_laststep = pbnlm.copy()
-        wbnlm_laststep = wbnlm.copy()
-        manlm,mbnlm = utils.my_spat_to_sh(mth,mphi,sh,simpars,zers,pool)
+        manlm,mbnlm = utils.my_spat_to_sh(mth,mphi,mr,sh,simpars,zers,pool)
 
     return wanlm_hist,wbnlm_hist,manlm_hist,mbnlm_hist,sh,r
     

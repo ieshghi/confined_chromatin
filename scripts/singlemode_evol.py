@@ -16,21 +16,21 @@ import matplotlib.pyplot as plt
 
 lmax = 10
 mmax = 10
-nmax = 3
+nmax = 20
 nr = 100
 rmax = 1
-dt = 0.01
-nt = 20
+dt = 0.003
+nt = 200
 phi0 = 0.5
-eps = 0.5
-lam = 0.001
-ls = 0.001
+eps = -0.5
+lam = 0.1
+ls = 0.0000001
 ld = 0.1
 iflinear = 1
 
-l_sim = 1
-m_sim = 1
-n_sim = 2
+l_sim = 0
+m_sim = 0
+n_sim = 1
 
 a_init = 0
 b_init = 1
@@ -69,7 +69,6 @@ wth,wphi,wr = sim_utils.my_sh_to_spat(anlm,bnlm,sh,simpars,zers,p)
 mth,mphi,mr = sim_utils.my_sh_to_spat(m_anlm,m_bnlm,sh,simpars,zers,p)
 
 initarrs = (wr,wth,wphi,mr,mth,mphi,sh) 
-
 
 wa,wb,ma,mb,sh,r = spherical_integrate.main(simpars,physpars,initarrs,sh,zers,p)
 zero_thismode = zers[(el==l_sim)*(em==m_sim),n_sim]

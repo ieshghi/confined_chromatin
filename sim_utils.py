@@ -133,7 +133,7 @@ def my_analys(rho,sh,simpars,besselzer,pool = None):
     
     return onlm
     
-def my_spat_to_sh(v_th,v_ph,sh,simpars,besselzer,pool = None): #this routine converts from spatial to harmonic representation, including the radial decomposition into bessel functions. Only keeps the curly part.
+def my_spat_to_sh(v_th,v_ph,v_r,sh,simpars,besselzer,pool = None): #this routine converts from spatial to harmonic representation, including the radial decomposition into bessel functions. Only keeps the curly part.
 
     r = simpars.r
     nmax = simpars.nmax
@@ -147,16 +147,21 @@ def my_spat_to_sh(v_th,v_ph,sh,simpars,besselzer,pool = None): #this routine con
     blm_r = np.tile(sh.spec_array(),[nr,1])
     slm = sh.spec_array()
     tlm = sh.spec_array()
+    qlm = sh.spec_array()
 
     one_spat = sh.spat_array()
     two_spat = sh.spat_array()
+    three_spat = sh.spat_array()
     
     for i in range(nr): #transform from spatial to spherical coords
         one_spat[:,:] = v_th[:,:,i]
         two_spat[:,:] = v_ph[:,:,i]
-        sh.spat_to_SHsphtor(one_spat,two_spat,slm,tlm)
+        three_spat[:,:] = v_r[:,:,i]
+        #sh.spat_to_SHsphtor(one_spat,two_spat,slm,tlm)
+        sh.spat_to_SHqst(three_spat,one_spat,two_spat,qlm,slm,tlm)
         alm_r[i,:] = tlm
         blm_r[i,:] = slm
+        blm_r[i,el==0] = qlm[el==0]
 
     args_a = ((r,alm_r[:,i],nmax,el[i],besselzer) for i in range(lm_num))
     args_b = ((r,r*blm_r[:,i],nmax,el[i],besselzer) for i in range(lm_num))
@@ -195,7 +200,10 @@ def my_sh_to_spat(anlm,bnlm,sh,simpars,besselzer = None,pool = None):
         alm_r = np.array(pool.map(bessel2func_packed,args_a)).T.copy()
         blm_r = np.array(pool.map(bessel2func_packed,args_b)).T.copy()
 
-    scal_blm_r = np.gradient(blm_r,r,edge_order=2,axis=0)
+    scal_blm_r = np.zeros(blm_r.shape,dtype = complex)
+    scal_blm_r[:,1:] = np.gradient(blm_r[:,1:],r,edge_order=2,axis=0)
+    scal_blm_r[1:,0] = blm_r[1:,0]/r[1:]
+    scal_blm_r[0,0] = 0
 
     for i in range(nr):
         if i>0:
@@ -213,24 +221,15 @@ def func2bessel_packed(args):
     x,y,nmax,l,zers = args
     return func2bessel(x,y,nmax,l,zers)
 
-def func2bessel(x,y,nmax,l,besselzer):
-    #if l == 0:
-    #    return np.zeros(nmax,dtype = complex)
-    #else:
-        def evalfun(l,i,x,zer):
-            if l==0 and i==0:
-                return 0
-            elif l==0:
-                return simpson(x_sc**2*jn(l,zer[i]*x_sc)*y,x_sc)/(jn(l+1,zer[i]))
-            else:
-                return simpson(x_sc**2*jn(l,zer[i]*x_sc)*y,x_sc)/(jn(l-1,zer[i])*jn(l+1,zer[i]))
+def func2bessel(x,y,nmax,l,zer):
+    x_sc = x/np.max(x)
+    lzer = zer[l,:nmax]
 
-        R = np.max(x)
-        x_sc = x/R
-            
-        lbesselzer = besselzer[l,:nmax]
-
-        return -2*np.array([evalfun(l,i,x_sc,lbesselzer) for i in range(nmax)])
+    if l > 0:
+        return -2*np.array([simpson(x_sc**2*jn(l,lzer[i]*x_sc)*y,x_sc)/(jn(l-1,lzer[i])*jn(l+1,lzer[i])) for i in range(nmax)])
+    else:
+        out = [simpson(x_sc**2*jn(1,lzer[i]*x_sc)*y,x_sc)*(lzer[i]) for i in range(1,nmax)]
+        return -2*np.array([0]+out)/np.max(x)
 
 def bessel2func_packed(args):
     x,y,l,zers = args
@@ -239,8 +238,11 @@ def bessel2func_packed(args):
 def bessel2func(x,ncoeffs,l,besselzer):
     nmax = len(ncoeffs)
     lbesselzer = besselzer[l,:nmax]
+    if l>0:
+        return np.sum(jn(l,x[:,None]*lbesselzer[None,:])*ncoeffs,1)
+    else:
+        return -np.sum(lbesselzer*jn(1,x[:,None]*lbesselzer[None,:])*ncoeffs,1)/np.max(x)
 
-    return np.sum(jn(l,x[:,None]*lbesselzer[None,:])*ncoeffs,1)
 
 def genzeros(lmax,mmax):
     zervals = np.zeros((lmax+1,mmax))
