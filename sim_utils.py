@@ -213,28 +213,32 @@ def func2bessel_packed(args):
     x,y,nmax,l,zers = args
     return func2bessel(x,y,nmax,l,zers)
 
-def func2bessel(x,y,nmax,l=1,besselzer = None):
-    if l == 0:
-        return np.zeros(nmax,dtype = complex)
-    else:
+def func2bessel(x,y,nmax,l,besselzer):
+    #if l == 0:
+    #    return np.zeros(nmax,dtype = complex)
+    #else:
+        def evalfun(l,i,x,zer):
+            if l==0 and i==0:
+                return 0
+            elif l==0:
+                return simpson(x_sc**2*jn(l,zer[i]*x_sc)*y,x_sc)/(jn(l+1,zer[i]))
+            else:
+                return simpson(x_sc**2*jn(l,zer[i]*x_sc)*y,x_sc)/(jn(l-1,zer[i])*jn(l+1,zer[i]))
+
         R = np.max(x)
         x_sc = x/R
-        if besselzer is None:
-            besselzer = np.loadtxt('../zerovals.txt')
             
-        lbesselzer = besselzer[l-1,:nmax]
+        lbesselzer = besselzer[l,:nmax]
 
-        return -2*np.array([simpson(x_sc**2*jn(l,lbesselzer[i]*x_sc)*y,x_sc)/(jn(l-1,lbesselzer[i])*jn(l+1,lbesselzer[i])) for i in range(nmax)])
+        return -2*np.array([evalfun(l,i,x_sc,lbesselzer) for i in range(nmax)])
 
 def bessel2func_packed(args):
     x,y,l,zers = args
     return bessel2func(x,y,l,zers)
 
-def bessel2func(x,ncoeffs,l=1,besselzer = None):
+def bessel2func(x,ncoeffs,l,besselzer):
     nmax = len(ncoeffs)
-    if besselzer is None:
-        besselzer = np.loadtxt('../zerovals.txt')
-    lbesselzer = besselzer[l-1,:nmax]
+    lbesselzer = besselzer[l,:nmax]
 
     return np.sum(jn(l,x[:,None]*lbesselzer[None,:])*ncoeffs,1)
 

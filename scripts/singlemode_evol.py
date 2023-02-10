@@ -16,13 +16,13 @@ import matplotlib.pyplot as plt
 
 lmax = 10
 mmax = 10
-nmax = 10
+nmax = 3
 nr = 100
 rmax = 1
-dt = 0.1
-nt = 4
+dt = 0.01
+nt = 20
 phi0 = 0.5
-eps = -1
+eps = 0.5
 lam = 0.001
 ls = 0.001
 ld = 0.1
@@ -70,7 +70,6 @@ mth,mphi,mr = sim_utils.my_sh_to_spat(m_anlm,m_bnlm,sh,simpars,zers,p)
 
 initarrs = (wr,wth,wphi,mr,mth,mphi,sh) 
 
-anlm_2,bnlm_2 = sim_utils.my_spat_to_sh(wth,wphi,sh,simpars,zers,p)
 
 wa,wb,ma,mb,sh,r = spherical_integrate.main(simpars,physpars,initarrs,sh,zers,p)
 zero_thismode = zers[(el==l_sim)*(em==m_sim),n_sim]
@@ -80,10 +79,10 @@ combo_bd = zero_thismode**2*ld**2/rmax**2
 combo_bs = zero_thismode**2*ls**2/rmax**2
 
 gamma_a = 2*(eps-combo_a)/(1+combo_a)
-gamma_b = 2*(eps-combo_bd-combo_bs)/(1+combo_bs)
+gamma_b = -2*(eps-combo_bd-combo_bs)/(1+combo_bs)
 k_b = 4*combo_bd/(1+combo_bs)
 
-b_init_prime = (2*(eps+1) - 2*combo_bd)/combo_bs*b_init #This is implied by m_init = 0
+b_init_prime = (2*(eps+1) - 2*combo_bd)/(1+combo_bs)*b_init #This is implied by m_init = 0
 
 tarr = dt*np.array(range(nt))
 a_evol = a_init*np.exp(tarr*gamma_a)
@@ -95,10 +94,10 @@ wb_hist = wb[(el==l_sim)*(em==m_sim),n_sim,:]
 name = 'l'+str(l_sim)+'m'+str(m_sim)+'n'+str(n_sim)+'hist.pdf'
 
 fig,(ax1,ax2) = plt.subplots(1,2)
-ax1.plot(tarr,a_evol,'b--',label='Analytical')
 ax1.plot(tarr,wa_hist[0],'rx',label='Numerical')
-ax2.plot(tarr,b_evol,'b--',label='Analytical')
+ax1.plot(tarr,a_evol,'b--',label='Analytical')
 ax2.plot(tarr,wb_hist[0],'rx',label='Numerical')
+ax2.plot(tarr,b_evol,'b--',label='Analytical')
 
 ax1.set_xlabel('Time')
 ax1.set_ylabel('Mode amplitude')
@@ -107,4 +106,5 @@ ax1.set_title('Transverse')
 ax2.set_xlabel('Time')
 ax2.set_ylabel('Mode amplitude')
 ax2.set_title('Longitudinal')
+fig.tight_layout()
 plt.show()

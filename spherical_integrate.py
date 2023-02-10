@@ -103,7 +103,7 @@ def main(simpars,physpars,initarrs,sh,zers = None,pool = None):
         else: #adams-bashforth two-step
             mth += dt*(3/2*pth-1/2*pth_laststep)
             mphi += dt*(3/2*pphi-1/2*pphi_laststep)
-            wanlm += dt*evol_curl*(3/2*panlm-1/2*panlm_laststep)
+            wanlm += evol_curl*(3/2*panlm-1/2*panlm_laststep)
             wbnlm = evol_long_pn*(3/2*pbnlm - 1/2*pbnlm_laststep) + evol_long_wn*(3/2*wbnlm - 1/2*wbnlm_laststep)
     
     
