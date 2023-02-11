@@ -110,12 +110,12 @@ def main(simpars,physpars,initarrs,sh,zers = None,pool = None):
             wbnlm = evol_long_pn*(3/2*pbnlm - 1/2*pbnlm_laststep) + evol_long_wn*wbnlm
     
         wth,wphi,wr = utils.my_sh_to_spat(wanlm,wbnlm,sh,simpars,zers,pool)
+        manlm,mbnlm = utils.my_spat_to_sh(mth,mphi,mr,sh,simpars,zers,pool)
         pth_laststep = pth.copy()
         pphi_laststep = pphi.copy()
         pr_laststep = pr.copy()
         panlm_laststep = panlm.copy()
         pbnlm_laststep = pbnlm.copy()
-        manlm,mbnlm = utils.my_spat_to_sh(mth,mphi,mr,sh,simpars,zers,pool)
 
     return wanlm_hist,wbnlm_hist,manlm_hist,mbnlm_hist,sh,r
     
