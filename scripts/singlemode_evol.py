@@ -20,9 +20,9 @@ nmax = 20
 nr = 100
 rmax = 1
 dt = 0.003
-nt = 200
+nt = 20
 phi0 = 0.5
-eps = -0.5
+eps = -0.2
 lam = 0.1
 ls = 0.0000001
 ld = 0.1
@@ -30,7 +30,7 @@ iflinear = 1
 
 l_sim = 0
 m_sim = 0
-n_sim = 1
+n_sim = 7
 
 a_init = 0
 b_init = 1

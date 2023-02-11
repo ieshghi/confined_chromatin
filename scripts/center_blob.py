@@ -51,7 +51,7 @@ besselzers = np.loadtxt('../zerovals.txt')
 zers = sim_utils.shaperight(besselzers[:lmax,:nmax],sh)
 print('Zeros loaded')
 #
-ncpu = 40
+ncpu = 6
 p = mlp.Pool(ncpu)
 print('Pool started')
 sh.nmax = nmax
@@ -70,6 +70,6 @@ initarrs = (wr,wth,wphi,mr,mth,mphi,sh)
 wa,wb,ma,mb,sh,r = spherical_integrate.main(simpars,physpars,initarrs,sh,zers,p)
 #spherical_integrate.save_out(wa,wb,ma,mb,sh,r,simpars,'corner_blob')
 #wa,wb,ma,mb,sh,r,simpars = plotting_utils.load_w_hist('corner_blob')
-plotting_utils.density_movie(wb,sh,r,simpars,rho_init,phi0,zers,undersamp = 1,name = 'density_mov_centered',minmax = [np.min(rho_init),np.max(rho_init)],pool = p)
-plotting_utils.animate_soln(wa,wb,ma,mb,sh,r,simpars,zers,undersamp = 1,fname = 'diff_mov_centered')
+#plotting_utils.density_movie(wb,sh,r,simpars,rho_init,phi0,zers,undersamp = 1,name = 'density_mov_centered',minmax = [np.min(rho_init),np.max(rho_init)],pool = p)
+#plotting_utils.animate_soln(wa,wb,ma,mb,sh,r,simpars,zers,undersamp = 1,fname = 'diff_mov_centered')
 #plotting_utils.animate_soln_arrows(wa,wb,sh,r,simpars,zers,undersamp = 10,fname = 'diffusive_arrows',spatial_undersamp = 10)

@@ -2,6 +2,7 @@ import shtns
 import numpy as np
 from scipy.integrate import simpson
 from scipy.special import spherical_jn as jn
+from scipy.integrate import cumulative_trapezoid
 from scipy.optimize import root
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
@@ -112,7 +113,6 @@ def my_div(bnlm,sh,simpars,besselzer=None,pool = None):
 def divcomponent_packed(args):
     r,ang,el,sh,besselzer = args
     rad = jn(el,r*besselzer)
-    print(el)
 
     return besselzer**2*ang[:,:,None]*rad[None,:]/(r[-1]**2)
 
@@ -144,8 +144,13 @@ def my_spat_to_sh(v_th,v_ph,v_r,sh,simpars,besselzer,pool = None): #this routine
 
     anlm = np.tile(sh.spec_array(),[nmax,1])
     bnlm = np.tile(sh.spec_array(),[nmax,1])
+
     alm_r = np.tile(sh.spec_array(),[nr,1])
     blm_r = np.tile(sh.spec_array(),[nr,1])
+    clm_r = np.tile(sh.spec_array(),[nr,1])
+
+    blm2_r = blm_r.copy()
+
     slm = sh.spec_array()
     tlm = sh.spec_array()
     qlm = sh.spec_array()
@@ -162,10 +167,16 @@ def my_spat_to_sh(v_th,v_ph,v_r,sh,simpars,besselzer,pool = None): #this routine
         sh.spat_to_SHqst(three_spat,one_spat,two_spat,qlm,slm,tlm)
         alm_r[i,:] = tlm
         blm_r[i,:] = slm
-        blm_r[i,el==0] = qlm[el==0]
+        clm_r[i,:] = qlm
 
-    args_a = ((r,alm_r[:,i],nmax,el[i],besselzer) for i in range(lm_num))
-    args_b = ((r,r*blm_r[:,i],nmax,el[i],besselzer) for i in range(lm_num))
+    for i in range(lm_num):
+        if el[i]==0:
+            blm_r[:,i] = cumulative_trapezoid(clm_r[:,i],r,initial=0)
+        else:
+            blm_r[:,i] = blm_r[:,i]*r
+
+    args_a = ((r,alm_r[:,i],nmax,el[i],besselzer,False) for i in range(lm_num))
+    args_b = ((r,blm_r[:,i],nmax,el[i],besselzer,True) for i in range(lm_num))
 
     if pool is None:
         anlm = np.array(list(map(func2bessel_packed,args_a))).T
@@ -202,9 +213,10 @@ def my_sh_to_spat(anlm,bnlm,sh,simpars,besselzer = None,pool = None):
         blm_r = np.array(pool.map(bessel2func_packed,args_b)).T.copy()
 
     scal_blm_r = np.zeros(blm_r.shape,dtype = complex)
-    scal_blm_r[:,1:] = np.gradient(blm_r[:,1:],r,edge_order=2,axis=0)
-    scal_blm_r[1:,0] = blm_r[1:,0]/r[1:]
-    scal_blm_r[0,0] = 0
+    scal_blm_r = np.gradient(blm_r,r,edge_order=2,axis=0)
+    #scal_blm_r[:,1:] = np.gradient(blm_r[:,1:],r,edge_order=2,axis=0)
+    #scal_blm_r[1:,0] = blm_r[1:,0]/r[1:]
+    #scal_blm_r[0,0] = 0
 
     for i in range(nr):
         if i>0:
@@ -219,18 +231,23 @@ def my_sh_to_spat(anlm,bnlm,sh,simpars,besselzer = None,pool = None):
     return vth,vph,vr
 
 def func2bessel_packed(args):
-    x,y,nmax,l,zers = args
-    return func2bessel(x,y,nmax,l,zers)
+    x,y,nmax,l,zers,iflong = args
+    return func2bessel(x,y,nmax,l,zers,iflong)
 
-def func2bessel(x,y,nmax,l,zer):
+def func2bessel(x,y,nmax,l,zer,iflong=False):
     x_sc = x/np.max(x)
     lzer = zer[l,:nmax]
-
     if l > 0:
         return -2*np.array([simpson(x_sc**2*jn(l,lzer[i]*x_sc)*y,x_sc)/(jn(l-1,lzer[i])*jn(l+1,lzer[i])) for i in range(nmax)])
     else:
-        out = [simpson(x_sc**2*jn(1,lzer[i]*x_sc)*y,x_sc)*(lzer[i]) for i in range(1,nmax)]
-        return -2*np.array([0]+out)/np.max(x)
+        if y[0] !=1 and iflong==True:
+            y += 1-y[0]
+            out = [2*simpson(x_sc**2*jn(0,lzer[i]*x_sc)*y,x_sc)*(i*np.pi)**2 for i in range(1,nmax)]
+            return np.array([0]+out)
+        else:
+            out = [2*simpson(x_sc**2*jn(0,lzer[i]*x_sc)*y,x_sc)*(i*np.pi)**2 for i in range(1,nmax)]
+            return np.array([0]+out)
+        
 
 def bessel2func_packed(args):
     x,y,l,zers = args
@@ -239,10 +256,11 @@ def bessel2func_packed(args):
 def bessel2func(x,ncoeffs,l,besselzer):
     nmax = len(ncoeffs)
     lbesselzer = besselzer[l,:nmax]
-    if l>0:
-        return np.sum(jn(l,x[:,None]*lbesselzer[None,:])*ncoeffs,1)
-    else:
-        return -np.sum(lbesselzer*jn(1,x[:,None]*lbesselzer[None,:])*ncoeffs,1)/np.max(x)
+    return np.sum(jn(l,x[:,None]*lbesselzer[None,:])*ncoeffs,1)
+#    if l>0:
+#        return np.sum(jn(l,x[:,None]*lbesselzer[None,:])*ncoeffs,1)
+#    else:
+#        return -np.sum(lbesselzer*jn(1,x[:,None]*lbesselzer[None,:])*ncoeffs,1)/np.max(x)
 
 
 def genzeros(lmax,mmax):
