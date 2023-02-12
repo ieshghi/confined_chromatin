@@ -126,7 +126,7 @@ def my_analys(rho,sh,simpars,besselzer,pool = None):
 
     olm_r = np.array([sh.analys(rho[:,:,i]) for i in range(nr)])
     
-    args = ((r,olm_r[:,i],nmax,el[i],besselzer,False) for i in range(lm_num))
+    args = ((r,olm_r[:,i],nmax,el[i],besselzer) for i in range(lm_num))
     if pool is None:
         onlm = np.array(list(map(func2bessel_packed,args))).T
     else:
@@ -161,7 +161,6 @@ def my_spat_to_sh(v_th,v_ph,v_r,sh,simpars,besselzer,pool = None): #this routine
         one_spat[:,:] = v_th[:,:,i]
         two_spat[:,:] = v_ph[:,:,i]
         three_spat[:,:] = v_r[:,:,i]
-        #sh.spat_to_SHsphtor(one_spat,two_spat,slm,tlm)
         sh.spat_to_SHqst(three_spat,one_spat,two_spat,qlm,slm,tlm)
         alm_r[i,:] = tlm
         blm_r[i,:] = slm
@@ -169,12 +168,12 @@ def my_spat_to_sh(v_th,v_ph,v_r,sh,simpars,besselzer,pool = None): #this routine
 
     for i in range(lm_num):
         if el[i]==0:
-            blm_r[:,i] = clm_r[:,i]#cumulative_trapezoid(clm_r[:,i],r,initial=0)
+            blm_r[:,i] = clm_r[:,i]
         else:
             blm_r[:,i] = blm_r[:,i]*r
 
-    args_a = ((r,alm_r[:,i],nmax,el[i],besselzer,False) for i in range(lm_num))
-    args_b = ((r,blm_r[:,i],nmax,el[i],besselzer,True) for i in range(lm_num))
+    args_a = ((r,alm_r[:,i],nmax,el[i],besselzer) for i in range(lm_num))
+    args_b = ((r,blm_r[:,i],nmax,el[i],besselzer) for i in range(lm_num))
 
     if pool is None:
         anlm = np.array(list(map(func2bessel_packed,args_a)))
@@ -226,22 +225,16 @@ def my_sh_to_spat(anlm,bnlm,sh,simpars,besselzer = None,pool = None):
     return vth,vph,vr
 
 def func2bessel_packed(args):
-    x,y,nmax,l,zers,iflong = args
-    return func2bessel(x,y,nmax,l,zers,iflong)
+    x,y,nmax,l,zers = args
+    return func2bessel(x,y,nmax,l,zers)
 
-def func2bessel(x,y,nmax,l,zer,iflong=False):
+def func2bessel(x,y,nmax,l,zer):
     x_sc = x/np.max(x)
     lzer = zer[l,:nmax]
     if l > 0:
         return -2*np.array([simpson(x_sc**2*jn(l,lzer[i]*x_sc)*y,x_sc)/(jn(l-1,lzer[i])*jn(l+1,lzer[i])) for i in range(nmax)])
     else:
-        #if y[0] !=1 and iflong==True:
-        #   # y += 1-y[0]
-        #    out = [2*simpson(x_sc**2*(jn(0,lzer[i]*x_sc))*y,x_sc)*(i*np.pi)**2 for i in range(1,nmax)]
-        #    return np.array([0]+out)
-        #else:
-        out = [-2*simpson(x_sc**2*jn(1,lzer[i]*x_sc)*y,x_sc)*(i*np.pi) for i in range(1,nmax)]
-        return np.array([0]+out)
+        return np.array([0]+[-2*simpson(x_sc**2*jn(1,lzer[i]*x_sc)*y,x_sc)*(i*np.pi) for i in range(1,nmax)])
         
 
 def bessel2func_packed(args):
@@ -252,11 +245,6 @@ def bessel2func(x,ncoeffs,l,besselzer):
     nmax = len(ncoeffs)
     lbesselzer = besselzer[l,:nmax]
     return np.sum(jn(l,x[:,None]*lbesselzer[None,:])*ncoeffs,1)
-#    if l>0:
-#        return np.sum(jn(l,x[:,None]*lbesselzer[None,:])*ncoeffs,1)
-#    else:
-#        return -np.sum(lbesselzer*jn(1,x[:,None]*lbesselzer[None,:])*ncoeffs,1)/np.max(x)
-
 
 def genzeros(lmax,mmax):
     zervals = np.zeros((lmax+1,mmax))
