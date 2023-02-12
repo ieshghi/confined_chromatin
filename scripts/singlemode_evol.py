@@ -27,12 +27,12 @@ ls = 0.0000001
 ld = 0.1
 iflinear = 1
 
-l_sim = 0
-m_sim = 0
-n_sim = 2
+l_sim = 4
+m_sim = 2
+n_sim = 1
 
-a_init = 0
-b_init = 1
+a_init = 1
+b_init = 0
 simpars = sim_utils.SimPars(lmax,mmax,nmax,nr,rmax,dt,nt,np.linspace(0,1,nr)*rmax,iflinear) #store parameters for the run in one object
 
 physpars = sim_utils.PhysPars(eps,lam,ls,ld) #store physical parameters

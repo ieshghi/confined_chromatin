@@ -126,7 +126,7 @@ def my_analys(rho,sh,simpars,besselzer,pool = None):
 
     olm_r = np.array([sh.analys(rho[:,:,i]) for i in range(nr)])
     
-    args = ((r,olm_r[:,i],nmax,el[i],besselzer) for i in range(lm_num))
+    args = ((r,olm_r[:,i],nmax,el[i],besselzer,False) for i in range(lm_num))
     if pool is None:
         onlm = np.array(list(map(func2bessel_packed,args))).T
     else:
@@ -148,8 +148,6 @@ def my_spat_to_sh(v_th,v_ph,v_r,sh,simpars,besselzer,pool = None): #this routine
     alm_r = np.tile(sh.spec_array(),[nr,1])
     blm_r = np.tile(sh.spec_array(),[nr,1])
     clm_r = np.tile(sh.spec_array(),[nr,1])
-
-    blm2_r = blm_r.copy()
 
     slm = sh.spec_array()
     tlm = sh.spec_array()
@@ -179,13 +177,13 @@ def my_spat_to_sh(v_th,v_ph,v_r,sh,simpars,besselzer,pool = None): #this routine
     args_b = ((r,blm_r[:,i],nmax,el[i],besselzer,True) for i in range(lm_num))
 
     if pool is None:
-        anlm = np.array(list(map(func2bessel_packed,args_a))).T
-        bnlm = np.array(list(map(func2bessel_packed,args_b))).T
+        anlm = np.array(list(map(func2bessel_packed,args_a)))
+        bnlm = np.array(list(map(func2bessel_packed,args_b)))
     else:
-        anlm = np.array(pool.map(func2bessel_packed,args_a)).T
-        bnlm = np.array(pool.map(func2bessel_packed,args_b)).T
+        anlm = np.array(pool.map(func2bessel_packed,args_a))
+        bnlm = np.array(pool.map(func2bessel_packed,args_b))
 
-    return anlm.T,bnlm.T
+    return anlm,bnlm
 
 def my_sh_to_spat(anlm,bnlm,sh,simpars,besselzer = None,pool = None):
 

@@ -37,7 +37,6 @@ def main(simpars,physpars,initarrs,sh,zers = None,pool = None):
     sh.phi = phi
     sh.nmax = nmax
     cost = sh.cos_theta
-    sh.nvals = range(1,nmax+1)
     #Initialize arrays
     wr = initarrs[0]
     wth = initarrs[1]
