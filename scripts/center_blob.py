@@ -14,9 +14,9 @@ import datetime
 ###
 
 
-lmax = 10
-mmax = 10
-nmax = 20
+lmax = 30
+mmax = 30
+nmax = 10
 nr = 100
 rmax = 1
 dt = 0.01
@@ -43,7 +43,7 @@ X = AR*np.cos(PH)*np.sqrt(1-CO**2)
 Y = AR*np.sin(PH)*np.sqrt(1-CO**2)
 Z = AR*CO
 
-rho_init = np.exp(-((X)**2 + Y**2 + Z**2)/0.01)
+rho_init = np.exp(-((X-0.5)**2 + Y**2 + Z**2)/0.01)
 
 sh.nmax = nmax
 #rho_init = np.exp(-(AR-0.5)**2/(0.1)**2)*np.exp(-CO**2/0.1**2)*np.exp(-(PH-np.pi)**2/0.01**2)
