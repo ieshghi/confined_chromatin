@@ -169,7 +169,7 @@ def my_spat_to_sh(v_th,v_ph,v_r,sh,simpars,besselzer,pool = None): #this routine
 
     for i in range(lm_num):
         if el[i]==0:
-            blm_r[:,i] = cumulative_trapezoid(clm_r[:,i],r,initial=0)
+            blm_r[:,i] = clm_r[:,i]#cumulative_trapezoid(clm_r[:,i],r,initial=0)
         else:
             blm_r[:,i] = blm_r[:,i]*r
 
@@ -212,9 +212,6 @@ def my_sh_to_spat(anlm,bnlm,sh,simpars,besselzer = None,pool = None):
 
     scal_blm_r = np.zeros(blm_r.shape,dtype = complex)
     scal_blm_r = np.gradient(blm_r,r,edge_order=2,axis=0)
-    #scal_blm_r[:,1:] = np.gradient(blm_r[:,1:],r,edge_order=2,axis=0)
-    #scal_blm_r[1:,0] = blm_r[1:,0]/r[1:]
-    #scal_blm_r[0,0] = 0
 
     for i in range(nr):
         if i>0:
@@ -238,13 +235,13 @@ def func2bessel(x,y,nmax,l,zer,iflong=False):
     if l > 0:
         return -2*np.array([simpson(x_sc**2*jn(l,lzer[i]*x_sc)*y,x_sc)/(jn(l-1,lzer[i])*jn(l+1,lzer[i])) for i in range(nmax)])
     else:
-        if y[0] !=1 and iflong==True:
-            y += 1-y[0]
-            out = [2*simpson(x_sc**2*jn(0,lzer[i]*x_sc)*y,x_sc)*(i*np.pi)**2 for i in range(1,nmax)]
-            return np.array([0]+out)
-        else:
-            out = [2*simpson(x_sc**2*jn(0,lzer[i]*x_sc)*y,x_sc)*(i*np.pi)**2 for i in range(1,nmax)]
-            return np.array([0]+out)
+        #if y[0] !=1 and iflong==True:
+        #   # y += 1-y[0]
+        #    out = [2*simpson(x_sc**2*(jn(0,lzer[i]*x_sc))*y,x_sc)*(i*np.pi)**2 for i in range(1,nmax)]
+        #    return np.array([0]+out)
+        #else:
+        out = [-2*simpson(x_sc**2*jn(1,lzer[i]*x_sc)*y,x_sc)*(i*np.pi) for i in range(1,nmax)]
+        return np.array([0]+out)
         
 
 def bessel2func_packed(args):
