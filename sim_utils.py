@@ -103,7 +103,7 @@ def my_div(bnlm,sh,simpars,besselzer=None,pool = None):
 
     ang = [sh.synth(bnlm[:,i]) for i in range(nmax)]
 
-    args = ((r,ang[j],el[i],sh,besselzer[el[i],j]) for i in range(lm_num) for j in range(nmax))
+    args = ((r,ang[j],el[i],em[i],sh,besselzer[el[i],j],bnlm[i,j]) for i in range(lm_num) for j in range(nmax))
 
     if pool is None:
         return sum(list(map(divcomponent_packed,args)))
@@ -111,10 +111,12 @@ def my_div(bnlm,sh,simpars,besselzer=None,pool = None):
         return sum(list(pool.map(divcomponent_packed,args)))
 
 def divcomponent_packed(args):
-    r,ang,el,sh,besselzer = args
+    r,ang,el,em,sh,besselzer,b = args
     rad = jn(el,r*besselzer)
-
-    return besselzer**2*ang[:,:,None]*rad[None,:]/(r[-1]**2)
+    if em>0:
+        return -b*besselzer**2*ang[:,:,None]*rad[None,:]/(r[-1]**2)
+    else:
+        return -b*besselzer**2*ang[:,:,None]*rad[None,:]/(2*r[-1]**2)
 
 def my_analys(rho,sh,simpars,besselzer,pool = None):
     r = simpars.r 

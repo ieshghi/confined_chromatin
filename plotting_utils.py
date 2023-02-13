@@ -42,7 +42,7 @@ def density_movie(bhistdat,sh,r,simpars,phi_init,phi0,besselzers = None,undersam
     for i in range(nt-1):
         print(i)
         a = utils.my_div(bhistdat[:,:,i],sh,simpars,besselzers,pool)
-        dphi = -phi0*(1-phi0)*a
+        dphi = -phi0*(1-phi0)*np.real(a)
         phi_now += dt*dphi
         phi_mov_plane[:,:,i+1] = phi_now[midslice,:,:][0]
 
