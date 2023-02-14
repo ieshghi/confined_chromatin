@@ -6,16 +6,15 @@ import plotting_utils
 import shtns
 import numpy as np
 import multiprocessing as mlp
-import time
-import datetime
+import matplotlib.pyplot as plt
 
 ###debugging
 #import matplotlib.pyplot as plt
 ###
 
 
-lmax = 30 
-mmax = 30 
+lmax = 2
+mmax = 2 
 nmax = 30
 nr = 100
 rmax = 1
@@ -23,8 +22,8 @@ dt = 0.1
 nt = 30
 phi0 = 0.5
 eps = -1
-lam = 0.001
-ls = 0.0000000001
+lam = 0.0
+ls = 0.0
 ld = 0.1
 iflinear = 0
 
@@ -42,8 +41,8 @@ wr,wth,wphi,mr,mth,mphi = sim_utils.initialize_arrays(simpars,sh)
 X = AR*np.cos(PH)*np.sqrt(1-CO**2)
 Y = AR*np.sin(PH)*np.sqrt(1-CO**2)
 Z = AR*CO
-
-rho_init = np.exp(-((X)**2 + Y**2 + Z**2)/0.04)
+sigma = 0.1
+rho_init = np.exp(-AR**2/(2*sigma**2))
 
 sh.nmax = nmax
 #rho_init = np.exp(-(AR-0.5)**2/(0.1)**2)*np.exp(-CO**2/0.1**2)*np.exp(-(PH-np.pi)**2/0.01**2)
@@ -59,7 +58,7 @@ sh.nmax = nmax
 
 zers_keep = sim_utils.shaperight(zers[:lmax,:nmax],sh)
 
-#gradphi_to_w = -ls**2*np.sqrt(ld)/(1+ls**2*zers_keep**2/rmax**2) 
+gradphi_to_w = -1/(1+ls**2*zers_keep**2/rmax**2) 
 bnlm = sim_utils.my_analys(rho_init,sh,simpars,zers,p)
 anlm = 0*bnlm
 print('Initial conditions calculated')
@@ -69,8 +68,29 @@ print('Initial conditions converted to spatial rep.')
 
 initarrs = (wr,wth,wphi,mr,mth,mphi,sh) 
 wa,wb,ma,mb,sh,r = spherical_integrate.main(simpars,physpars,initarrs,sh,zers,p)
+
+t0 = sigma**2/(4*ld**2)
+tarr = np.linspace(0,1,nt)*dt + t0
+expected_density = np.exp(-AR[:,:,:,None]**2/(8*ld**2*tarr[None,:]))*(t0*np.ones(AR.shape)[:,:,:,None]/tarr[None,:])**(3/2)
+
 #spherical_integrate.save_out(wa,wb,ma,mb,sh,r,simpars,'corner_blob')
 #wa,wb,ma,mb,sh,r,simpars = plotting_utils.load_w_hist('corner_blob')
 rho_hist = plotting_utils.density_movie(wb,sh,r,simpars,rho_init,phi0,zers,undersamp = 1,name = 'density_mov_centered',minmax = [np.min(rho_init),np.max(rho_init)],pool = p)
 #plotting_utils.animate_soln(wa,wb,ma,mb,sh,r,simpars,zers,undersamp = 1,fname = 'diff_mov_centered')
 #plotting_utils.animate_soln_arrows(wa,wb,sh,r,simpars,zers,undersamp = 1,fname = 'diffusive_arrows',spatial_undersamp = 10)
+plt.close('all')
+
+midslice = (CO==np.min(np.abs(CO)))*(PH==np.min(PH))
+slices_plot = [0,10,20,29]
+fig,(ax1,ax2) = plt.subplots(2,1)
+for i in range(len(slices_plot)):
+    fr = slices_plot[i]
+    ax1.plot(r,rho_hist[0,:,fr])
+    ax1.plot(r,expected_density[midslice,fr],'--')
+    
+    wth,wph,wr = sim_utils.my_sh_to_spat(wa[:,:,fr],wb[:,:,fr],sh,simpars,zers,p)
+    wr = wr[midslice]
+    ax2.plot(r,wr)
+    ax2.plot(r,10*np.gradient(rho_hist[0,:,fr],edge_order=2),'--')
+
+plt.show()

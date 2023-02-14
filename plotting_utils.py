@@ -37,7 +37,6 @@ def density_movie(bhistdat,sh,r,simpars,phi_init,phi0,besselzers = None,undersam
     phi_mov_plane = np.tile(phi_init_plane,[nt,1,1])
     phi_mov_plane = np.swapaxes(phi_mov_plane,0,2)
     phi_mov_plane = np.swapaxes(phi_mov_plane,0,1)
-#    phi_mov = np.tile(np.zeros(phi_init.shape),[nt,1])
     phi_now = phi_init
     for i in range(nt-1):
         print(i)
