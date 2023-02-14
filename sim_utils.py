@@ -12,7 +12,7 @@ def make_coords(simpars): #put initial conditions here
 
     sh = picklable_sht(simpars.lmax,simpars.mmax)  # create sht object with given lmax and mmax (orthonormalized)
     [nlat,nphi] = sh.set_grid()
-    phi = np.linspace(0,2*np.pi,sh.nphi)
+    phi = np.linspace(0,2*np.pi,sh.nphi,endpoint=False)
     cost = sh.cos_theta
     r = np.linspace(0,1,simpars.nr)*simpars.rmax
     PH,CO,AR = np.meshgrid(phi,cost,r)
@@ -94,29 +94,30 @@ def my_div(bnlm,sh,simpars,besselzer=None,pool = None):
     # div(w_{nlm}) = -\alpha_ln^2/R^2 j_l(r\alpha_ln/R)Y_lm. All that remains is summing over them.
 
     nmax = simpars.nmax
-    nr = simpars.nr
-    r = simpars.r/simpars.rmax
+    r = simpars.r
     el = sh.l
     em = sh.m
     lm_num = len(el)
-    sh.set_grid()
+#    sh.set_grid()
+    def mkspec(b,i,j):
+        zer = np.zeros(lm_num,dtype=complex)
+        zer[i] = b[i,j]
+        return zer
 
-    ang = [sh.synth(bnlm[:,i]) for i in range(nmax)]
-
-    args = ((r,ang[j],el[i],em[i],sh,besselzer[el[i],j],bnlm[i,j]) for i in range(lm_num) for j in range(nmax))
+    args = ((r,sh.synth(mkspec(bnlm,i,j)),el[i],em[i],sh,besselzer[el[i],j]) for i in range(lm_num) for j in range(nmax))
 
     if pool is None:
         return sum(list(map(divcomponent_packed,args)))
     else:
-        return sum(list(pool.map(divcomponent_packed,args)))
+        return np.sum(np.array(pool.map(divcomponent_packed,args)),axis=0)
 
 def divcomponent_packed(args):
-    r,ang,el,em,sh,besselzer,b = args
+    r,ang,el,em,sh,besselzer = args
     rad = jn(el,r*besselzer)
     if em>0:
-        return -b*besselzer**2*ang[:,:,None]*rad[None,:]/(r[-1]**2)
+        return -besselzer**2*ang[:,:,None]*rad[None,:]/(2*r[-1]**2)
     else:
-        return -b*besselzer**2*ang[:,:,None]*rad[None,:]/(2*r[-1]**2)
+        return -besselzer**2*ang[:,:,None]*rad[None,:]/(r[-1]**2)
 
 def my_analys(rho,sh,simpars,besselzer,pool = None):
     r = simpars.r 

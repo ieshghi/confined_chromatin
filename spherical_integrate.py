@@ -29,7 +29,7 @@ def main(simpars,physpars,initarrs,sh,zers = None,pool = None):
     #sh = shtns.sht(lmax, mmax)  # create sht object with given lmax and mmax (orthonormalized)
      
     nlat, nphi = sh.set_grid()  # build default grid (gauss grid, phi-contiguous)
-    phi = np.linspace(0,2*np.pi,nphi) #assume uniform grid in \phi direction
+    phi = np.linspace(0,2*np.pi,nphi,endpoint = False) #assume uniform grid in \phi direction
     
     el = sh.l                   # array of size sh.nlm giving the spherical harmonic degree l for any sh coefficient
     em = sh.m

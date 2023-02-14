@@ -16,16 +16,16 @@ import datetime
 
 lmax = 5
 mmax = 5
-nmax = 40
+nmax = 20
 nr = 100
 rmax = 1
-dt = 1
-nt = 100
+dt = 0.1 
+nt = 30
 phi0 = 0.5
 eps = -1
 lam = 0.001
 ls = 0.0000000001
-ld = 100000
+ld = 0.1
 iflinear = 0
 
 simpars = sim_utils.SimPars(lmax,mmax,nmax,nr,rmax,dt,nt,np.linspace(0,1,nr)*rmax,iflinear) #store parameters for the run in one object
