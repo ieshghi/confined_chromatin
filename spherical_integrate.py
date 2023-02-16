@@ -53,8 +53,8 @@ def main(simpars,physpars,initarrs,sh,zers = None,pool = None):
     
     #### convert w init conds to harmonics
     
-    wanlm,wbnlm = utils.my_spat_to_sh(wth,wphi,wr,sh,simpars,zers,pool) 
-    manlm,mbnlm = utils.my_spat_to_sh(mth,mphi,mr,sh,simpars,zers,pool) 
+    wanlm,wbnlm = utils.my_spat_to_sh(wth.copy(),wphi.copy(),wr.copy(),sh,simpars,zers,pool) 
+    manlm,mbnlm = utils.my_spat_to_sh(mth.copy(),mphi.copy(),mr.copy(),sh,simpars,zers,pool) 
     
     #### Physics parameters
 
@@ -84,11 +84,11 @@ def main(simpars,physpars,initarrs,sh,zers = None,pool = None):
     ### Time evolution loop
     for i in range(nt):
         print('Timestep: '+str(i))
-        wanlm_hist[:,:,i] = wanlm
-        manlm_hist[:,:,i] = manlm
-        wbnlm_hist[:,:,i] = wbnlm
-        mbnlm_hist[:,:,i] = mbnlm
-        mr_eq,mth_eq,mphi_eq = utils.meq(wr,wth,wphi,iflinear)
+        wanlm_hist[:,:,i] = wanlm.copy()
+        manlm_hist[:,:,i] = manlm.copy()
+        wbnlm_hist[:,:,i] = wbnlm.copy()
+        mbnlm_hist[:,:,i] = mbnlm.copy()
+        mr_eq,mth_eq,mphi_eq = utils.meq(wr.copy(),wth.copy(),wphi.copy(),iflinear)
 
         pth = 2*(mth_eq -mth).copy()
         pphi = 2*(mphi_eq -mphi).copy()
@@ -108,8 +108,8 @@ def main(simpars,physpars,initarrs,sh,zers = None,pool = None):
             wanlm += evol_curl*(3/2*panlm - 1/2*panlm_laststep)
             wbnlm = evol_long_pn*(3/2*pbnlm - 1/2*pbnlm_laststep) + evol_long_wn*wbnlm
     
-        wth,wphi,wr = utils.my_sh_to_spat(wanlm,wbnlm,sh,simpars,zers,pool)
-        manlm,mbnlm = utils.my_spat_to_sh(mth,mphi,mr,sh,simpars,zers,pool)
+        wth,wphi,wr = utils.my_sh_to_spat(wanlm.copy(),wbnlm.copy(),sh,simpars,zers,pool)
+        manlm,mbnlm = utils.my_spat_to_sh(mth.copy(),mphi.copy(),mr.copy(),sh,simpars,zers,pool)
         pth_laststep = pth.copy()
         pphi_laststep = pphi.copy()
         pr_laststep = pr.copy()

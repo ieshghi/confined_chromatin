@@ -128,14 +128,15 @@ def my_analys(rho,sh,simpars,besselzer,pool = None):
     lm_num = len(el)
 
     olm_r = np.array([sh.analys(rho[:,:,i]) for i in range(nr)])
+    olm_r[:,0] = np.gradient(olm_r[:,0],r,edge_order=2)
     
     args = ((r,olm_r[:,i],nmax,el[i],besselzer) for i in range(lm_num))
     if pool is None:
-        onlm = np.array(list(map(func2bessel_packed,args))).T
+        onlm = np.array(list(map(func2bessel_packed,args)))
     else:
-        onlm = np.array(pool.map(func2bessel_packed,args)).T
+        onlm = np.array(pool.map(func2bessel_packed,args))
     
-    return onlm.T
+    return onlm
     
 def my_spat_to_sh(v_th,v_ph,v_r,sh,simpars,besselzer,pool = None): #this routine converts from spatial to harmonic representation, including the radial decomposition into bessel functions. Only keeps the curly part.
 
