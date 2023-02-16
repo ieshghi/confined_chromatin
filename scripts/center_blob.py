@@ -14,19 +14,19 @@ from scipy.special import erf
 ###
 
 
-lmax = 10
-mmax = 10
-nmax = 10
-nr = 100
+lmax = 2
+mmax = 2
+nmax = 30
+nr = 200
 rmax = 1
-dt = 0.01
-nt = 500
+dt = 0.003
+nt = 100
 phi0 = 0.5
-eps = 2
+eps = -1 
 lam = 0.0
 ls = 0.
 ld = 0.1
-iflinear = 0
+iflinear = 1
 
 simpars = sim_utils.SimPars(lmax,mmax,nmax,nr,rmax,dt,nt,np.linspace(0,1,nr)*rmax,iflinear) #store parameters for the run in one object
 
@@ -71,7 +71,7 @@ expected_coeffs = gradphi_to_w[0,:]*[(-1)**m*np.exp(-1/2*m*np.pi*(m*np.pi*sigma*
 wa,wb,ma,mb,sh,r = spherical_integrate.main(simpars,physpars,initarrs,sh,zers,p)
 
 t0 = sigma**2/(4*ld**2)
-tarr = np.linspace(0,1,nt)*dt + t0
+tarr = np.linspace(0,1,nt)*dt*nt + t0
 expected_density = np.exp(-AR[:,:,:,None]**2/(8*ld**2*tarr[None,:]))*(t0*np.ones(AR.shape)[:,:,:,None]/tarr[None,:])**(3/2)
 
 #spherical_integrate.save_out(wa,wb,ma,mb,sh,r,simpars,'corner_blob')
@@ -82,7 +82,7 @@ rho_hist = plotting_utils.density_movie(wb,sh,r,simpars,rho_init.copy(),phi0,zer
 plt.close('all')
 
 midslice = (CO==np.min(np.abs(CO)))*(PH==np.min(PH))
-slices_plot = [0,10,20]
+slices_plot = [0,30,60,90]
 fig,(ax1,ax2) = plt.subplots(2,1)
 for i in range(len(slices_plot)):
     fr = slices_plot[i]
@@ -92,6 +92,6 @@ for i in range(len(slices_plot)):
     wth,wph,wr = sim_utils.my_sh_to_spat(wa[:,:,fr],wb[:,:,fr],sh,simpars,zers,p)
     wr = wr[midslice]
     ax2.plot(r,wr)
-    ax2.plot(r,-2*ld**2/(phi0*(1-phi0))*np.gradient(rho_hist[0,:,fr],edge_order=2),'--')
+    ax2.plot(r,-2*ld**2/(phi0*(1-phi0))*np.gradient(rho_hist[0,:,fr],r,edge_order=2),'--')
 
 plt.show()
