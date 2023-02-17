@@ -73,27 +73,27 @@ def main(simpars,physpars,initarrs,sh,zers = None,pool = None):
     mbnlm_hist = np.zeros((sh.nlm,nmax,nt),dtype = complex)
     
     ### Time evolution arrays
-    evol_curl = dt*(eps+1)/(1+(zers_keep*lam/rmax)**2)
+    evol_curl = dt*(eps+1)/(1+(zers_keep*lam/rmax)**2) #To evolve the transverse part of w
     
-    bigA = (2*ld**2*zers_keep**2/rmax**2)/(1+ls**2*zers_keep**2/rmax**2)
-    bigB = (eps+1)/(1+ls**2*zers_keep**2/rmax**2)
+    bigA = (ld**2*zers_keep**2/rmax**2)/(1+ls**2*zers_keep**2/rmax**2)
+    bigB = (eps+1)/(1+ls**2*zers_keep**2/rmax**2) #To evolve the longitudinal part of w
     
-    evol_long_pn = dt*bigB/(1+dt*bigA/2)
-    evol_long_wn = (1-dt*bigA/2)/(1+dt*bigA/2) #crank-nicolson scheme
+    evol_long_pn = dt*bigB/(1+dt*bigA) #the component of the w evolution which is sourced by m, using Crank-Nicolson (hence the 1+dt A in the denominator)
+    evol_long_wn = (1-dt*bigA)/(1+dt*bigA) #the component of the w evolution based on its own previous state, using Crank-Nicolson
     
     ### Time evolution loop
     for i in range(nt):
         print('Timestep: '+str(i))
-        wanlm_hist[:,:,i] = wanlm.copy()
+        wanlm_hist[:,:,i] = wanlm.copy() #Store current state of the fields into history arrays
         manlm_hist[:,:,i] = manlm.copy()
         wbnlm_hist[:,:,i] = wbnlm.copy()
         mbnlm_hist[:,:,i] = mbnlm.copy()
-        mr_eq,mth_eq,mphi_eq = utils.meq(wr.copy(),wth.copy(),wphi.copy(),iflinear)
+        mr_eq,mth_eq,mphi_eq = utils.meq(wr.copy(),wth.copy(),wphi.copy(),iflinear) #Calculate equilibrium values of the field m in spatial representation
 
-        pth = 2*(mth_eq -mth).copy()
+        pth = 2*(mth_eq -mth).copy() #The field p = d/dt m is calculated directly from this equilibrium value
         pphi = 2*(mphi_eq -mphi).copy()
         pr = 2*(mr_eq -mr).copy()
-        panlm,pbnlm = utils.my_spat_to_sh(pth,pphi,pr,sh,simpars,zers,pool)
+        panlm,pbnlm = utils.my_spat_to_sh(pth,pphi,pr,sh,simpars,zers,pool) #convert p from spatial to spherical harmonic basis
     
         if i == 0: #for the first time step we use explicit Euler
             mth += dt*pth
@@ -101,22 +101,22 @@ def main(simpars,physpars,initarrs,sh,zers = None,pool = None):
             mr += dt*pr
             wanlm += evol_curl*panlm
             wbnlm = evol_long_pn*pbnlm + evol_long_wn*wbnlm
-        else: #adams-bashforth two-step
+        else: #adams-bashforth two-step evolution afterwards
             mth += dt*(3/2*pth-1/2*pth_laststep)
             mphi += dt*(3/2*pphi-1/2*pphi_laststep)
             mr += dt*(3/2*pr-1/2*pr_laststep)
             wanlm += evol_curl*(3/2*panlm - 1/2*panlm_laststep)
             wbnlm = evol_long_pn*(3/2*pbnlm - 1/2*pbnlm_laststep) + evol_long_wn*wbnlm
     
-        wth,wphi,wr = utils.my_sh_to_spat(wanlm.copy(),wbnlm.copy(),sh,simpars,zers,pool)
-        manlm,mbnlm = utils.my_spat_to_sh(mth.copy(),mphi.copy(),mr.copy(),sh,simpars,zers,pool)
-        pth_laststep = pth.copy()
+        wth,wphi,wr = utils.my_sh_to_spat(wanlm.copy(),wbnlm.copy(),sh,simpars,zers,pool) #Convert w from spherical harmonic representation back to spatial
+        manlm,mbnlm = utils.my_spat_to_sh(mth.copy(),mphi.copy(),mr.copy(),sh,simpars,zers,pool) #Same thing for the m field
+        pth_laststep = pth.copy() #Save the current state of p so that the next time-step can use it
         pphi_laststep = pphi.copy()
         pr_laststep = pr.copy()
         panlm_laststep = panlm.copy()
         pbnlm_laststep = pbnlm.copy()
 
-    return wanlm_hist,wbnlm_hist,manlm_hist,mbnlm_hist,sh,r
+    return wanlm_hist,wbnlm_hist,manlm_hist,mbnlm_hist,sh,r #return the histories of all field parameters, along with some useful arrays for other purposes (sh and r)
     
 def save_out(wanlm,wbnlm,manlm,mbnlm,sh,r,simpars,name='wanlm_hist'):
     ### Save output to a file
