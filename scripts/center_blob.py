@@ -20,9 +20,9 @@ nmax = 10
 nr = 100
 rmax = 1
 dt = 0.01
-nt = 10
+nt = 100
 phi0 = 0.5
-eps = -1 
+eps = 0.5
 lam = 0.0
 ls = 0.
 ld = 0.1
@@ -71,69 +71,68 @@ wth,wphi,wr = sim_utils.my_sh_to_spat(anlm,bnlm,sh,simpars,zers,p)
 print('Initial conditions converted to spatial rep.')
 
 initarrs = (wr,wth,wphi,mr,mth,mphi,sh) 
-expected_coeffs = gradphi_to_w[0,:]*[(-1)**m*np.exp(-1/2*m*np.pi*(m*np.pi*sigma**2-2j))*m**2*np.pi**(5/2)*sigma**3/np.sqrt(2)*(erf((1-m*np.pi*sigma**2*1j)/(np.sqrt(2)*sigma))+erf((1+m*np.pi*sigma**2*1j)/(np.sqrt(2)*sigma))) for m in range(nmax)]
 wa,wb,ma,mb,sh,r = spherical_integrate.main(simpars,physpars,initarrs,sh,zers,p)
 
-t0 = sigma**2/(4*ld**2)
-tarr = np.linspace(0,1,nt)*dt*nt + t0
-ARsqshift = (X-x0)**2 + (Y-y0)**2 + (Z-z0)**2
-expected_density = np.exp(-ARsqshift[:,:,:,None]/(8*ld**2*tarr[None,:]))*(t0*np.ones(AR.shape)[:,:,:,None]/tarr[None,:])**(3/2)
-
+#t0 = sigma**2/(4*ld**2)
+#tarr = np.linspace(0,1,nt)*dt*nt + t0
+#ARsqshift = (X-x0)**2 + (Y-y0)**2 + (Z-z0)**2
+#expected_density = np.exp(-ARsqshift[:,:,:,None]/(8*ld**2*tarr[None,:]))*(t0*np.ones(AR.shape)[:,:,:,None]/tarr[None,:])**(3/2)
+#
 
 #spherical_integrate.save_out(wa,wb,ma,mb,sh,r,simpars,'corner_blob')
 #wa,wb,ma,mb,sh,r,simpars = plotting_utils.load_w_hist('corner_blob')
 rho_hist = plotting_utils.density_movie(wb,sh,r,simpars,rho_init.copy(),phi0,zers,1,name,[np.min(rho_init),np.max(rho_init)],pool = p)
 #plotting_utils.animate_soln(wa,wb,ma,mb,sh,r,simpars,zers,undersamp = 1,fname = 'diff_mov_centered')
 #plotting_utils.animate_soln_arrows(wa,wb,sh,r,simpars,zers,undersamp = 1,fname = 'diffusive_arrows',spatial_undersamp = 10)
-plt.close('all')
-ARshift=AR-abs(x0)
-rshift = r-abs(x0)
-
-midslice_r = (CO==np.min(np.abs(CO)))*(PH==np.pi)
-midslice_p = (CO==np.min(np.abs(CO)))*(ARshift == np.min(np.abs(ARshift)))
-rslice = rshift==np.min(np.abs(rshift))
-rslice_val = r[rslice]
-slices_plot = [0,5,9]
-fig,ax = plt.subplots(3,2)
-
-phi = np.linspace(0,2*np.pi,sh.nphi,endpoint = False)
-for i in range(len(slices_plot)):
-    fr = slices_plot[i]
-    ax[0,0].plot(phi,rho_hist[:,rslice,fr])
-    ax[0,0].plot(phi,expected_density[midslice_p,fr],'--')
-    ax[0,0].set_title(r'$\rho$')
-    ax[0,0].set_xlabel(r'$\phi$')
-    
-    wth,wph,wr = sim_utils.my_sh_to_spat(wa[:,:,fr],wb[:,:,fr],sh,simpars,zers,p)
-    wr_p = wr[midslice_p]
-    ax[1,0].plot(phi,wr_p)
-    ax[1,0].plot(phi,-2*ld**2/(phi0*(1-phi0))*np.gradient(rho_hist[:,:,fr],r,axis=1,edge_order=2)[:,rslice][:,0],'--')
-    ax[1,0].set_title(r'$w_{r}$')
-    ax[1,0].set_xlabel(r'$\phi$')
-
-    wph_p = wph[midslice_p]
-    ax[2,0].plot(phi,wph_p)
-    ax[2,0].plot(phi,-2*ld**2/(phi0*(1-phi0))*np.gradient(rho_hist[:,rslice,fr][:,0],phi,edge_order=2)/rslice_val,'--')
-    ax[2,0].set_title(r'$w_{\phi}$')
-    ax[2,0].set_xlabel(r'$\phi$')
-
-    ax[0,1].plot(r,rho_hist[np.where(phi==np.pi),:,fr][0][0])
-    ax[0,1].plot(r,expected_density[midslice_r,fr],'--')
-    ax[0,1].set_title(r'$\rho$')
-    ax[0,1].set_xlabel('r')
-    
-    wth,wph,wr = sim_utils.my_sh_to_spat(wa[:,:,fr],wb[:,:,fr],sh,simpars,zers,p)
-    wr_r = wr[midslice_r]
-    ax[1,1].plot(r,wr_r)
-    ax[1,1].plot(r,-2*ld**2/(phi0*(1-phi0))*np.gradient(rho_hist[np.where(phi==np.pi),:,fr][0][0],r,edge_order=2),'--')
-    ax[1,1].set_title(r'$w_r$')
-    ax[1,1].set_xlabel('r')
-
-    wph_r = wph[midslice_r]
-    ax[2,1].plot(r,wph_r)
-    ax[2,1].plot(r,-2*ld**2/(phi0*(1-phi0))*np.gradient(rho_hist[:,:,fr],phi,axis=0,edge_order=2)[0,:]/rslice_val,'--')
-    ax[2,1].set_title(r'$w_{\phi}$')
-    ax[2,1].set_xlabel('r')
-
-fig.tight_layout()
-plt.show()
+#plt.close('all')
+#ARshift=AR-abs(x0)
+#rshift = r-abs(x0)
+#
+#midslice_r = (CO==np.min(np.abs(CO)))*(PH==np.pi)
+#midslice_p = (CO==np.min(np.abs(CO)))*(ARshift == np.min(np.abs(ARshift)))
+#rslice = rshift==np.min(np.abs(rshift))
+#rslice_val = r[rslice]
+#slices_plot = [0,5,9]
+#fig,ax = plt.subplots(3,2)
+#
+#phi = np.linspace(0,2*np.pi,sh.nphi,endpoint = False)
+#for i in range(len(slices_plot)):
+#    fr = slices_plot[i]
+#    ax[0,0].plot(phi,rho_hist[:,rslice,fr])
+#    ax[0,0].plot(phi,expected_density[midslice_p,fr],'--')
+#    ax[0,0].set_title(r'$\rho$')
+#    ax[0,0].set_xlabel(r'$\phi$')
+#    
+#    wth,wph,wr = sim_utils.my_sh_to_spat(wa[:,:,fr],wb[:,:,fr],sh,simpars,zers,p)
+#    wr_p = wr[midslice_p]
+#    ax[1,0].plot(phi,wr_p)
+#    ax[1,0].plot(phi,-2*ld**2/(phi0*(1-phi0))*np.gradient(rho_hist[:,:,fr],r,axis=1,edge_order=2)[:,rslice][:,0],'--')
+#    ax[1,0].set_title(r'$w_{r}$')
+#    ax[1,0].set_xlabel(r'$\phi$')
+#
+#    wph_p = wph[midslice_p]
+#    ax[2,0].plot(phi,wph_p)
+#    ax[2,0].plot(phi,-2*ld**2/(phi0*(1-phi0))*np.gradient(rho_hist[:,rslice,fr][:,0],phi,edge_order=2)/rslice_val,'--')
+#    ax[2,0].set_title(r'$w_{\phi}$')
+#    ax[2,0].set_xlabel(r'$\phi$')
+#
+#    ax[0,1].plot(r,rho_hist[np.where(phi==np.pi),:,fr][0][0])
+#    ax[0,1].plot(r,expected_density[midslice_r,fr],'--')
+#    ax[0,1].set_title(r'$\rho$')
+#    ax[0,1].set_xlabel('r')
+#    
+#    wth,wph,wr = sim_utils.my_sh_to_spat(wa[:,:,fr],wb[:,:,fr],sh,simpars,zers,p)
+#    wr_r = wr[midslice_r]
+#    ax[1,1].plot(r,wr_r)
+#    ax[1,1].plot(r,-2*ld**2/(phi0*(1-phi0))*np.gradient(rho_hist[np.where(phi==np.pi),:,fr][0][0],r,edge_order=2),'--')
+#    ax[1,1].set_title(r'$w_r$')
+#    ax[1,1].set_xlabel('r')
+#
+#    wph_r = wph[midslice_r]
+#    ax[2,1].plot(r,wph_r)
+#    ax[2,1].plot(r,-2*ld**2/(phi0*(1-phi0))*np.gradient(rho_hist[:,:,fr],phi,axis=0,edge_order=2)[0,:]/rslice_val,'--')
+#    ax[2,1].set_title(r'$w_{\phi}$')
+#    ax[2,1].set_xlabel('r')
+#
+#fig.tight_layout()
+#plt.show()
