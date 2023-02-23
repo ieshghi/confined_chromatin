@@ -42,7 +42,7 @@ wr,wth,wphi,mr,mth,mphi = sim_utils.initialize_arrays(simpars,sh)
 X = AR*np.cos(PH)*np.sqrt(1-CO**2)
 Y = AR*np.sin(PH)*np.sqrt(1-CO**2)
 Z = AR*CO
-x0 = 0.51
+x0 = -0.41
 y0 = 0
 z0 = 0
 name = 'density_mov_xshift01'
@@ -75,7 +75,7 @@ expected_coeffs = gradphi_to_w[0,:]*[(-1)**m*np.exp(-1/2*m*np.pi*(m*np.pi*sigma*
 wa,wb,ma,mb,sh,r = spherical_integrate.main(simpars,physpars,initarrs,sh,zers,p)
 
 t0 = sigma**2/(4*ld**2)
-tarr = np.linspace(0,1,nt)*dt*nt/2 + t0
+tarr = np.linspace(0,1,nt)*dt*nt + t0
 ARsqshift = (X-x0)**2 + (Y-y0)**2 + (Z-z0)**2
 expected_density = np.exp(-ARsqshift[:,:,:,None]/(8*ld**2*tarr[None,:]))*(t0*np.ones(AR.shape)[:,:,:,None]/tarr[None,:])**(3/2)
 
@@ -89,7 +89,7 @@ plt.close('all')
 ARshift=AR-abs(x0)
 rshift = r-abs(x0)
 
-midslice_r = (CO==np.min(np.abs(CO)))*(PH==np.min(PH))
+midslice_r = (CO==np.min(np.abs(CO)))*(PH==np.pi)
 midslice_p = (CO==np.min(np.abs(CO)))*(ARshift == np.min(np.abs(ARshift)))
 rslice = rshift==np.min(np.abs(rshift))
 rslice_val = r[rslice]
@@ -117,7 +117,7 @@ for i in range(len(slices_plot)):
     ax[2,0].set_title(r'$w_{\phi}$')
     ax[2,0].set_xlabel(r'$\phi$')
 
-    ax[0,1].plot(r,rho_hist[0,:,fr])
+    ax[0,1].plot(r,rho_hist[np.where(phi==np.pi),:,fr][0][0])
     ax[0,1].plot(r,expected_density[midslice_r,fr],'--')
     ax[0,1].set_title(r'$\rho$')
     ax[0,1].set_xlabel('r')
@@ -125,7 +125,7 @@ for i in range(len(slices_plot)):
     wth,wph,wr = sim_utils.my_sh_to_spat(wa[:,:,fr],wb[:,:,fr],sh,simpars,zers,p)
     wr_r = wr[midslice_r]
     ax[1,1].plot(r,wr_r)
-    ax[1,1].plot(r,-2*ld**2/(phi0*(1-phi0))*np.gradient(rho_hist[0,:,fr],r,edge_order=2),'--')
+    ax[1,1].plot(r,-2*ld**2/(phi0*(1-phi0))*np.gradient(rho_hist[np.where(phi==np.pi),:,fr][0][0],r,edge_order=2),'--')
     ax[1,1].set_title(r'$w_r$')
     ax[1,1].set_xlabel('r')
 

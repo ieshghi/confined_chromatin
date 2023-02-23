@@ -124,13 +124,14 @@ def my_analys(rho,sh,simpars,besselzer,pool = None):
     nmax = simpars.nmax
     nr = len(r)
     el = sh.l
+    em = sh.m
     
     lm_num = len(el)
 
     olm_r = np.array([sh.analys(rho[:,:,i]) for i in range(nr)])
     olm_r[:,0] = np.gradient(olm_r[:,0],r,edge_order=2)
     
-    args = ((r,olm_r[:,i],nmax,el[i],besselzer) for i in range(lm_num))
+    args = ((r,olm_r[:,i],nmax,el[i],em[i],besselzer) for i in range(lm_num))
     if pool is None:
         onlm = np.array(list(map(func2bessel_packed,args)))
     else:
@@ -144,6 +145,7 @@ def my_spat_to_sh(v_th,v_ph,v_r,sh,simpars,besselzer,pool = None): #this routine
     nmax = simpars.nmax
     nr = len(r)
     el = sh.l
+    em = sh.m
     lm_num = len(el)
 
     anlm = np.tile(sh.spec_array(),[nmax,1])
@@ -176,8 +178,8 @@ def my_spat_to_sh(v_th,v_ph,v_r,sh,simpars,besselzer,pool = None): #this routine
         else:
             blm_r[:,i] = blm_r[:,i]*r
 
-    args_a = ((r,alm_r[:,i],nmax,el[i],besselzer) for i in range(lm_num))
-    args_b = ((r,blm_r[:,i],nmax,el[i],besselzer) for i in range(lm_num))
+    args_a = ((r,alm_r[:,i],nmax,el[i],em[i],besselzer) for i in range(lm_num))
+    args_b = ((r,blm_r[:,i],nmax,el[i],em[i],besselzer) for i in range(lm_num))
 
     if pool is None:
         anlm = np.array(list(map(func2bessel_packed,args_a)))
@@ -194,6 +196,7 @@ def my_sh_to_spat(anlm,bnlm,sh,simpars,besselzer = None,pool = None):
     r = simpars.r
     nlat,nphi = sh.set_grid()
     el = sh.l
+    em = sh.m
     lm_num = len(el)
 
     vth = np.empty((nlat,nphi,nr))
@@ -203,8 +206,8 @@ def my_sh_to_spat(anlm,bnlm,sh,simpars,besselzer = None,pool = None):
     one_spat = sh.spat_array()
     two_spat = sh.spat_array()
 
-    args_a = ((r,anlm[i,:],el[i],besselzer) for i in range(lm_num))
-    args_b = ((r,bnlm[i,:],el[i],besselzer) for i in range(lm_num))
+    args_a = ((r,anlm[i,:],el[i],em[i],besselzer) for i in range(lm_num))
+    args_b = ((r,bnlm[i,:],el[i],em[i],besselzer) for i in range(lm_num))
 
     if pool is None:
         alm_r = np.array(list(map(bessel2func_packed,args_a))).T.copy()
@@ -229,26 +232,31 @@ def my_sh_to_spat(anlm,bnlm,sh,simpars,besselzer = None,pool = None):
     return vth,vph,vr
 
 def func2bessel_packed(args):
-    x,y,nmax,l,zers = args
-    return func2bessel(x,y,nmax,l,zers)
+    x,y,nmax,l,m,zers = args
+    return func2bessel(x,y,nmax,l,m,zers)
 
-def func2bessel(x,y,nmax,l,zer):
+def func2bessel(x,y,nmax,l,m,zer):
     x_sc = x/np.max(x)
     lzer = zer[l,:nmax]
     if l > 0:
-        return -2*np.array([simpson(x_sc**2*jn(l,lzer[i]*x_sc)*y,x_sc)/(jn(l-1,lzer[i])*jn(l+1,lzer[i])) for i in range(nmax)])
+        if m>0:
+            return -4*np.array([simpson(x_sc**2*jn(l,lzer[i]*x_sc)*y,x_sc)/(jn(l-1,lzer[i])*jn(l+1,lzer[i])) for i in range(nmax)])
+        else:
+            return -2*np.array([simpson(x_sc**2*jn(l,lzer[i]*x_sc)*y,x_sc)/(jn(l-1,lzer[i])*jn(l+1,lzer[i])) for i in range(nmax)])
     else:
         return np.array([0]+[-2*simpson(x_sc**2*jn(1,lzer[i]*x_sc)*y,x_sc)*(i*np.pi) for i in range(1,nmax)])
         
-
 def bessel2func_packed(args):
-    x,y,l,zers = args
-    return bessel2func(x,y,l,zers)
+    x,y,l,m,zers = args
+    return bessel2func(x,y,l,m,zers)
 
-def bessel2func(x,ncoeffs,l,besselzer):
+def bessel2func(x,ncoeffs,l,m,besselzer):
     nmax = len(ncoeffs)
     lbesselzer = besselzer[l,:nmax]
-    return np.sum(jn(l,x[:,None]*lbesselzer[None,:])*ncoeffs,1)
+    if m>0:
+        return np.sum(jn(l,x[:,None]*lbesselzer[None,:])*ncoeffs,1)/2
+    else:
+        return np.sum(jn(l,x[:,None]*lbesselzer[None,:])*ncoeffs,1)
 
 def genzeros(lmax,mmax):
     zervals = np.zeros((lmax+1,mmax))
