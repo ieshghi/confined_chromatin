@@ -71,6 +71,8 @@ def main(simpars,physpars,initarrs,sh,zers = None,pool = None):
     manlm_hist = np.zeros((sh.nlm,nmax,nt),dtype = complex)
     wbnlm_hist = np.zeros((sh.nlm,nmax,nt),dtype = complex)
     mbnlm_hist = np.zeros((sh.nlm,nmax,nt),dtype = complex)
+
+    m_max_hist = np.zeros(nt)
     
     ### Time evolution arrays
     evol_curl = dt*(eps+1)/(1+(zers_keep*lam/rmax)**2) #To evolve the transverse part of w
@@ -115,8 +117,9 @@ def main(simpars,physpars,initarrs,sh,zers = None,pool = None):
         pr_laststep = pr.copy()
         panlm_laststep = panlm.copy()
         pbnlm_laststep = pbnlm.copy()
+        m_max_hist[i] = np.max(mth**2 + mr**2 + mphi**2)
 
-    return wanlm_hist,wbnlm_hist,manlm_hist,mbnlm_hist,sh,r #return the histories of all field parameters, along with some useful arrays for other purposes (sh and r)
+    return wanlm_hist,wbnlm_hist,manlm_hist,mbnlm_hist,m_max_hist,sh,r #return the histories of all field parameters, along with some useful arrays for other purposes (sh and r)
     
 def save_out(wanlm,wbnlm,manlm,mbnlm,sh,r,simpars,name='wanlm_hist'):
     ### Save output to a file
