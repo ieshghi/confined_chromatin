@@ -20,7 +20,7 @@ nmax = 5
 nr = 100
 rmax = 1
 dt = 0.5
-nt = 100
+nt = 300
 lam = 0.001
 ls = 0.01
 ld = 0.1
@@ -48,7 +48,7 @@ print('Pool started')
 criticalval_trans = (lam*zers[1,0])**2 #Assuming R = 1, this is the critical threshold for the transverse mode l = 1, n = 0
 criticalval_long = (ld + ls)**2*(zers[0,1])**2 #This is the critical threshold for the longitudinal mode l=0,n=1
 
-noiselevel = 1e-10
+noiselevel = 0
 delta_eps = criticalval_long-criticalval_trans
 
 epsvals = np.linspace(0,criticalval_long + delta_eps,20)
@@ -70,8 +70,8 @@ n_sim_a = 0
 ind_keep_b = (el==0)*(em==0)
 n_sim_b = 1
 
-a_init = 0.5
-b_init = 0.1
+a_init = 0. + noiselevel*np.random.rand()
+b_init = 0.1 + noiselevel*np.random.rand()
 
 gamma_a = 2*(eps-criticalval_trans)/(1+criticalval_trans)
 anlm[ind_keep_a,n_sim_a] = a_init 
@@ -84,7 +84,21 @@ initarrs = (wr,wth,wphi,mr,mth,mphi,sh)
 
 #run the evolution
 
-wa,wb,ma,mb,mmax_hist,sh,r = spherical_integrate.main(simpars,physpars,initarrs,sh,zers,p)
+simpars.nt = 100
+wa_first,wb_first,ma_first,mb_first,mmax_hist_first,sh,r = spherical_integrate.main(simpars,physpars,initarrs,sh,zers,p)
+wa_first[ind_keep_a,n_sim_a,-1] = 10
+ma_first[ind_keep_a,n_sim_a,-1] = 10/(gamma_a/2+1)
+
+wth_f,wphi_f,wr_f = sim_utils.my_sh_to_spat(wa_first[:,:,-1],wb_first[:,:,-1],sh,simpars,zers,p)
+mth_f,mphi_f,mr_f = sim_utils.my_sh_to_spat(ma_first[:,:,-1],mb_first[:,:,-1],sh,simpars,zers,p)
+simpars.nt = 200
+wa_sec,wb_sec,ma_sec,mb_sec,mmax_hist_sec,sh,r = spherical_integrate.main(simpars,physpars,initarrs,sh,zers,p)
+
+wa = np.concatenate((wa_first,wa_sec),axis=2)
+wb = np.concatenate((wb_first,wb_sec),axis=2)
+ma = np.concatenate((ma_first,ma_sec),axis=2)
+mb = np.concatenate((mb_first,mb_sec),axis=2)
+mmax_hist = np.concatenate((mmax_hist_first,mmax_hist_sec))
 
 ma_corr = ma[ind_keep_a,n_sim_a,:][0]
 mb_corr = mb[ind_keep_b,n_sim_b,:][0]
