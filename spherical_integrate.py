@@ -82,7 +82,6 @@ def main(simpars,physpars,initarrs,sh,zers = None,pool = None):
     
     evol_long_pn = dt*bigB/(1+dt*bigA) #the component of the w evolution which is sourced by m, using Crank-Nicolson (hence the 1+dt A in the denominator)
     evol_long_wn = (1-dt*bigA)/(1+dt*bigA) #the component of the w evolution based on its own previous state, using Crank-Nicolson
-    
     ### Time evolution loop
     for i in range(nt):
         print('Timestep: '+str(i))
