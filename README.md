@@ -5,4 +5,4 @@ This repository contains the code used to numerically solve the equations of mot
 The current version of the code is not very user-friendly, it is shared as a matter of transparency.
 If there is significant interest in using this code or part of it, I may clean it up and write actual documentation for its use.
 
-This code makes significant use of the excellent package SHTNS (https://nschaeff.bitbucket.io/shtns/group__sht.html) for two-dimensional Vector Spherical Harmonic transforms.
+This code makes significant use of the excellent package SHTNS (https://nschaeff.bitbucket.io/shtns/index.html) for two-dimensional Vector Spherical Harmonic transforms.
